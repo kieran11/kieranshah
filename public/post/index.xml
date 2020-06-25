@@ -12,14 +12,13 @@
     
     
     <item>
-      <title>First post</title>
-      <link>/2020/06/07/first-post/</link>
+      <title>Student Forecast Model</title>
+      <link>/current/</link>
       <pubDate>Sun, 07 Jun 2020 00:00:00 +0000</pubDate>
       
-      <guid>/2020/06/07/first-post/</guid>
-      <description>Describe a model:The first step is to create a simulated dataset, which mimics real transitions for an undergraduate student.
-The next step is to simulate the chances of moving on.
-IdSemesterNumberSemesterProbOfMovingOnMovedOnCurrentSemesterFutureSemester1F10.46692711F1W11W10.19578851W1F21F20.69046831F2W21W20.</description>
+      <guid>/current/</guid>
+      <description>This post attempts to provide an example using simulated data of how to forecast student enrollment at a four-year college or university. It uses Markov chains with simulated data. The complete code to reproduce this post can be found here
+Describe a model:In most North Americana four-year universities, students progress through the four-year curriculum, and then graduate after four years. However, some students leave after the first year, other after their third year.</description>
     </item>
     
   </channel>

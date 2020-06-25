@@ -7,7 +7,7 @@ disqusShortname = ""
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [permalinks]
-    post = "/:year/:month/:day/:slug/"
+    post = "Current"
 
 [[menu.main]]
     name = "About"
@@ -34,9 +34,5 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
     # path to the favicon, under "static"
     favicon = "favicon.ico"
 
-    [params.logo]
-    url = "logo.png"
-    width = 50
-    height = 50
-    alt = "Logo"
+
 
