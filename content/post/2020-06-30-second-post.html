@@ -1,0 +1,102 @@
+---
+title: NBA Average Career Length
+author: ''
+date: '2020-06-30'
+slug: second-post
+categories:
+  - R
+tags: []
+---
+
+
+
+<div id="ballr" class="section level2">
+<h2>Ballr</h2>
+<p>The <code>ballr</code> package provides easy to use function to access the vast data resources on basketball-reference.com.</p>
+<p>To get historical data for a defined group of players, we first pick a few given seasons. For our example, we pick the 2003 to the 2010 seasons.</p>
+<p>The complete code to reproduce this post can be found <a href="https://github.com/kieran11/averageagenba/blob/master/AverageAgeNba.Rmd">here</a></p>
+<pre class="r"><code>Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min(season = .x) ) %&gt;% 
+  bind_rows(.)
+
+
+PullLinksMissing = Per36 %&gt;%
+  select(player, link) %&gt;% 
+  filter(is.na(link)) %&gt;% 
+  distinct(player) %&gt;% 
+  tidyr::separate(player, into = c(&quot;First&quot;, &quot;Last&quot;), remove = FALSE ,sep = &quot;[ ]&quot;) %&gt;% 
+  mutate_all(tolower) %&gt;% 
+  mutate_at(vars(Last) , ~ stringi::stri_replace_all_regex(.x, &quot;[^[:alpha:]]&quot;, &quot;&quot;)) %&gt;% 
+  mutate(newLink_a = paste0(&quot;players/&quot; , stringi::stri_sub(Last, 1, 1) , &quot;/&quot;, 
+                          stringi::stri_sub(Last,1,5),
+                          stringi::stri_sub(First, 1, 2))  ,
+         newLink = dplyr::case_when(First == &quot;ray&quot; &amp; Last == &quot;allen&quot; ~ paste0(newLink_a, &quot;02.html&quot; ), 
+                             TRUE ~ paste0(newLink_a, &quot;01.html&quot;)) ,
+         FullURL = paste0(&quot;http://www.basketball-reference.com/&quot;, newLink))  %&gt;% 
+  rowwise() %&gt;% 
+  mutate(Exist = url.exists(FullURL)) %&gt;% 
+  ungroup() %&gt;% 
+  mutate(ShortenURL = stringi::stri_replace_all_fixed(FullURL, 
+                                                      &quot;http://www.basketball-reference.com&quot;, &quot;&quot;)) %&gt;% 
+  mutate(PlayerInfo = purrr::map( ShortenURL,  NBAPlayerPerGameStats) ) %&gt;% 
+  select(player,link=ShortenURL, PlayerInfo)
+
+dput(PullLinksMissing,&quot;MissingPlayers&quot;)
+
+PullLinksCompl = Per36 %&gt;% 
+  filter(!is.na(link)) %&gt;%
+  select(link, player) %&gt;% 
+  distinct(link, .keep_all = TRUE) %&gt;% 
+  mutate(PlayerInfo_a = purrr::map( link,  NBAPlayerPerGameStats) ,
+         PlayerInfo = purrr::map(PlayerInfo_a , ~ .x %&gt;% mutate_at(vars(-season, -tm, -lg, -pos), as.numeric)) )</code></pre>
+<p>The first step is to pull all player data for these years. We use the function <code>NBAPerGameStatisticsPer36Min</code>, and only keep the distinct player names and links. In the dataset, there is a variable called <code>link</code>, which provides the URL to that player on Basketball Reference.</p>
+<p>Note, there are some players who do not have a link. After googling, and using some intuition, I realized the players were all hall of famers. The asterisks in the underlying data break the link function from the <code>ballr</code> package.</p>
+<p>To fix this, we use the <code>url.exists</code> function from the <code>RCurl</code> package to recreate the URL. The link the function <code>NBAPlayerPerGameStats</code> is basically the following:</p>
+<ul>
+<li>players</li>
+<li>the lowercase first letter of the last name</li>
+<li>the first five letters of the last name</li>
+<li>the first two letters of the first name</li>
+<li>a digit which refers to whether a player who has the same name preceded that player. For instance, for Ray Allen, there was another Ray Allen. His digit is 02, while most other players have 01.</li>
+</ul>
+<p>Finally, after getting our unique links for both players who have a links, and players who do not, we pull the full career statistics for all players from 2003 to 2010 using <code>NBAPlayerPerGameStats</code>.</p>
+<p>There is one final data issue. The class of each of the columns <code>NBAPlayerPerGameStats</code> pulls in is not consistent. Across the eight datasets (2003 to 2010), the variable games or <code>g</code>, is classified as both character and numeric. To resolve this final issue, we simply define all variables as numeric with the exception of a few variables prior to using the command <code>unnest</code>.</p>
+<pre class="r"><code>CompleteDataSet = bind_rows( PullLinksCompl , PullLinksMissing ) %&gt;% 
+  mutate(PlayerInfo2 = purrr::map(PlayerInfo , ~ .x %&gt;% 
+                                    mutate_at(vars(-season, -tm, -lg, -pos), as.numeric))) %&gt;%
+  select(-PlayerInfo) %&gt;% 
+  tidyr::unnest(PlayerInfo2)
+
+dput(CompleteDataSet , &quot;CompleteDataSet&quot;)</code></pre>
+</div>
+<div id="take-a-look-at-the-data" class="section level2">
+<h2>Take a look at the data:</h2>
+<p>Now that we have the data, we can look at the average length of a career, average minutes, among other variables that represent basketball playing career.</p>
+<p>There are 949 unique players in the dataset.</p>
+<p>There are four variables that we could use to define length of career:</p>
+<ol style="list-style-type: decimal">
+<li>Starting age to ending age.</li>
+<li>Number of games</li>
+<li>Number of minutes</li>
+<li>Number of seasons</li>
+</ol>
+<p>We’ll show the distribution for each of these below:</p>
+</div>
+<div id="starting-age" class="section level2">
+<h2>Starting Age:</h2>
+<p>The starting age to ending age shows the journey. A player like PJ Tucker may have entered the league at age 21, but then did not play again until the age of 27. He is now thriving at age 35. The duration of his career includes seasons played in Europe. Basketball Reference data does not capture that.</p>
+<p>The first plot looks at the distribution of the three age metrics. The dashed-red vertical line is the median value of each of the three metrics. This plot includes active players, or more specifically, players who have an entry for the 2019-2020 season.</p>
+<p><img src="/post/2020-06-30-second-post_files/figure-html/ageplt1-1.png" width="672" /></p>
+<p>The second plot is the same, however, we remove active players.</p>
+<p><img src="/post/2020-06-30-second-post_files/figure-html/ageplt2-1.png" width="672" /></p>
+<div id="number-of-minutes-and-games-played" class="section level3">
+<h3>Number of Minutes and Games Played</h3>
+<p>The number of games played is conceptually simple idea. However, it is hard to differentiate between a player who had low minutes played because of injuries, and a player who had low minutes played because of poor performance.</p>
+<p><img src="/post/2020-06-30-second-post_files/figure-html/PltOtherVars-1.png" width="672" /></p>
+<p>Including, or excluding current players does not change the distribution in particular.</p>
+<p><img src="/post/2020-06-30-second-post_files/figure-html/PltOtherVarsNtCurr-1.png" width="672" /></p>
+</div>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>Overall, the <code>ballr</code> package is intuitive to use, and using a couple of functions together can provide a powerful mechanism to pull lots of career data from Basketball-Reference.</p>
+</div>

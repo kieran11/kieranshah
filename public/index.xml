@@ -6,10 +6,22 @@
     <description>Recent content on Kieran Shah&#39;s Data Science Examples</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 07 Jun 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 30 Jun 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>NBA Average Career Length</title>
+      <link>/current/</link>
+      <pubDate>Tue, 30 Jun 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/current/</guid>
+      <description>BallrThe ballr package provides easy to use function to access the vast data resources on basketball-reference.com.
+To get historical data for a defined group of players, we first pick a few given seasons. For our example, we pick the 2003 to the 2010 seasons.
+The complete code to reproduce this post can be found here
+Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min(season = .x) ) %&amp;gt;% bind_rows(.</description>
+    </item>
     
     <item>
       <title>Student Forecast Model</title>
