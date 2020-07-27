@@ -45,5 +45,17 @@ Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min
 Describe a model:In most North Americana four-year universities, students progress through the four-year curriculum, and then graduate after four years. However, some students leave after the first year, other after their third year.</description>
     </item>
     
+    <item>
+      <title>Survival Analysis</title>
+      <link>/current/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/current/</guid>
+      <description>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.
+The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.
+As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.
+Next, we look at the seasons played:</description>
+    </item>
+    
   </channel>
 </rss>

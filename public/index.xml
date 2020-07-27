@@ -54,5 +54,17 @@ Describe a model:In most North Americana four-year universities, students progr
       <description>I am a statistician working on post-secondary issues at the University of Guelph. I work with different departments to create projections for future student counts. I also work on different program evaluations.</description>
     </item>
     
+    <item>
+      <title>Survival Analysis</title>
+      <link>/current/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/current/</guid>
+      <description>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.
+The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.
+As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.
+Next, we look at the seasons played:</description>
+    </item>
+    
   </channel>
 </rss>

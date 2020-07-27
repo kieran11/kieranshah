@@ -43,6 +43,10 @@
   </url>
   
   <url>
+    <loc>/current/</loc>
+  </url>
+  
+  <url>
     <loc>/tags/</loc>
   </url>
   
