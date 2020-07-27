@@ -6,10 +6,22 @@
     <description>Recent content on Kieran Shah&#39;s Data Science Examples</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 30 Jun 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 26 Jul 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Get NBA Draft Data</title>
+      <link>/current/</link>
+      <pubDate>Sun, 26 Jul 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/current/</guid>
+      <description>Getting draft dataAn interesting aspect of evaluating average player length is looking at their original draft position. The below code uses Basketball Reference and rvest to pull the drafts from 1985 to 2010.
+This post uses the two packages rvest and the tidyverse package.
+The code below looks through the NBA draft pages on Basketball Reference. It pulls the html tag table.
+When the code reads in the data, the first few variables do not have assigned variable names.</description>
+    </item>
     
     <item>
       <title>NBA Average Career Length</title>
