@@ -1,6 +1,11 @@
 ---
-title: "Survival Analysis"
-output: html_document
+title: Survival Analysis
+author: ''
+date: '2020-07-27'
+slug: second-post
+categories:
+  - R
+tags: []
 ---
 
 ```{r setup, include=FALSE}
