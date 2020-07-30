@@ -6,10 +6,45 @@
     <description>Recent content on Kieran Shah&#39;s Data Science Examples</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 26 Jul 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 31 Jul 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>New Cases Analysis</title>
+      <link>/current/</link>
+      <pubDate>Fri, 31 Jul 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/current/</guid>
+      <description>Analysis:The purpose of this analysis is to evaluate the impact of our three weather metrics on new Covid-19 cases in California. The complete and large dataset can be found here.
+The complete code for this post can be found here:.
+The basic California model will hypothesize that the stages of each opening should increase new cases after a week. Similarly, weather should work in a similar pattern. Better weather should encourage more outdoor activity, and we should see a drop in cases up until a certain point.</description>
+    </item>
+    
+    <item>
+      <title>Survival Analysis</title>
+      <link>/current/</link>
+      <pubDate>Mon, 27 Jul 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/current/</guid>
+      <description>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.
+The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.
+As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.
+Next, we look at the seasons played:</description>
+    </item>
+    
+    <item>
+      <title>Survival Analysis</title>
+      <link>/current/</link>
+      <pubDate>Mon, 27 Jul 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/current/</guid>
+      <description>Weather DataMany epidemiological experts have linked weather to rising or falling Covid-19 cases. The first two steps of the process of getting data is as follows:
+The Covid-19 cases by county in the United States (US) can be found here:.
+The weather data comes from Darksky. We use the package darksky. darksky is a wrapper for the API DarkSky provides.
+The package darksky and its documentation is here:.</description>
+    </item>
     
     <item>
       <title>Get NBA Draft Data</title>
@@ -52,18 +87,6 @@ Describe a model:In most North Americana four-year universities, students progr
       
       <guid>/about/</guid>
       <description>I am a statistician working on post-secondary issues at the University of Guelph. I work with different departments to create projections for future student counts. I also work on different program evaluations.</description>
-    </item>
-    
-    <item>
-      <title>Survival Analysis</title>
-      <link>/current/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/current/</guid>
-      <description>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.
-The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.
-As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.
-Next, we look at the seasons played:</description>
     </item>
     
   </channel>

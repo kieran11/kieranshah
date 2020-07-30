@@ -6,8 +6,8 @@
 <meta name="generator" content="Hugo 0.72.0" />
 
 
-<title>NBA Average Career Length - Kieran Shah&#39;s Data Science Examples</title>
-<meta property="og:title" content="NBA Average Career Length - Kieran Shah&#39;s Data Science Examples">
+<title>New Cases Analysis - Kieran Shah&#39;s Data Science Examples</title>
+<meta property="og:title" content="New Cases Analysis - Kieran Shah&#39;s Data Science Examples">
 
 
   <link href='/favicon.ico' rel='icon' type='image/x-icon'/>
@@ -62,108 +62,814 @@
 
   <article class="article">
     
-    <span class="article-duration">4 min read</span>
+    <span class="article-duration">10 min read</span>
     
 
-    <h1 class="article-title">NBA Average Career Length</h1>
+    <h1 class="article-title">New Cases Analysis</h1>
 
     
-    <span class="article-date">2020-06-30</span>
+    <span class="article-date">2020-07-31</span>
     
 
     <div class="article-content">
       
 
 
-<div id="ballr" class="section level2">
-<h2>Ballr</h2>
-<p>The <code>ballr</code> package provides easy to use function to access the vast data resources on basketball-reference.com.</p>
-<p>To get historical data for a defined group of players, we first pick a few given seasons. For our example, we pick the 2003 to the 2010 seasons.</p>
-<p>The complete code to reproduce this post can be found <a href="https://github.com/kieran11/averageagenba/blob/master/AverageAgeNba.Rmd">here</a></p>
-<pre class="r"><code>Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min(season = .x) ) %&gt;% 
-  bind_rows(.)
+<div id="analysis" class="section level2">
+<h2>Analysis:</h2>
+<p>The purpose of this analysis is to evaluate the impact of our three weather metrics on <strong>new</strong> Covid-19 cases in California. The complete and large dataset can be found <a href="https://www.dropbox.com/preview/Public/WeatherData/WeatherCases.csv?role=personal">here</a>.</p>
+<p>The complete code for this post can be found <a href="https://github.com/kieran11/WeatherCovid/blob/master/CovidAnalysis.Rmd">here:</a>.</p>
+<p>The basic California model will hypothesize that the stages of each opening should increase new cases after a week. Similarly, weather should work in a similar pattern. Better weather should encourage more outdoor activity, and we should see a drop in cases up until a certain point. Temperature rises beyond a certain point will have a positive association with new cases as it encourages more indoor activity.</p>
+<p>The first step is to determine the model. The main choices of the model are the lag number. Does the temperature three days prior have a greater influence on new Covid-19 cases than the temperature 13 days prior? Ideally, we would use a log likelihood model. However, the models are not nested, and thus we do not use a log likelihood test. A nested models contains the previous model within it.</p>
+<p>As we can see, the model with a six day lag has the lowest AIC, and it will be the model we evaluate. The <code>Mdl</code> column just tells us whether it is an interaction model or not. The interaction model has an interaction between temperature and precipiation intensity.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
 
+#nizxevqbyp .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
 
-PullLinksMissing = Per36 %&gt;%
-  select(player, link) %&gt;% 
-  filter(is.na(link)) %&gt;% 
-  distinct(player) %&gt;% 
-  tidyr::separate(player, into = c(&quot;First&quot;, &quot;Last&quot;), remove = FALSE ,sep = &quot;[ ]&quot;) %&gt;% 
-  mutate_all(tolower) %&gt;% 
-  mutate_at(vars(Last) , ~ stringi::stri_replace_all_regex(.x, &quot;[^[:alpha:]]&quot;, &quot;&quot;)) %&gt;% 
-  mutate(newLink_a = paste0(&quot;players/&quot; , stringi::stri_sub(Last, 1, 1) , &quot;/&quot;, 
-                          stringi::stri_sub(Last,1,5),
-                          stringi::stri_sub(First, 1, 2))  ,
-         newLink = dplyr::case_when(First == &quot;ray&quot; &amp; Last == &quot;allen&quot; ~ paste0(newLink_a, &quot;02.html&quot; ), 
-                             TRUE ~ paste0(newLink_a, &quot;01.html&quot;)) ,
-         FullURL = paste0(&quot;http://www.basketball-reference.com/&quot;, newLink))  %&gt;% 
-  rowwise() %&gt;% 
-  mutate(Exist = url.exists(FullURL)) %&gt;% 
-  ungroup() %&gt;% 
-  mutate(ShortenURL = stringi::stri_replace_all_fixed(FullURL, 
-                                                      &quot;http://www.basketball-reference.com&quot;, &quot;&quot;)) %&gt;% 
-  mutate(PlayerInfo = purrr::map( ShortenURL,  NBAPlayerPerGameStats) ) %&gt;% 
-  select(player,link=ShortenURL, PlayerInfo)
+#nizxevqbyp .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
 
-dput(PullLinksMissing,&quot;MissingPlayers&quot;)
+#nizxevqbyp .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
 
-PullLinksCompl = Per36 %&gt;% 
-  filter(!is.na(link)) %&gt;%
-  select(link, player) %&gt;% 
-  distinct(link, .keep_all = TRUE) %&gt;% 
-  mutate(PlayerInfo_a = purrr::map( link,  NBAPlayerPerGameStats) ,
-         PlayerInfo = purrr::map(PlayerInfo_a , ~ .x %&gt;% mutate_at(vars(-season, -tm, -lg, -pos), as.numeric)) )</code></pre>
-<p>The first step is to pull all player data for these years. We use the function <code>NBAPerGameStatisticsPer36Min</code>, and only keep the distinct player names and links. In the dataset, there is a variable called <code>link</code>, which provides the URL to that player on Basketball Reference.</p>
-<p>Note, there are some players who do not have a link. After googling, and using some intuition, I realized the players were all hall of famers. The asterisks in the underlying data break the link function from the <code>ballr</code> package.</p>
-<p>To fix this, we use the <code>url.exists</code> function from the <code>RCurl</code> package to recreate the URL. The link the function <code>NBAPlayerPerGameStats</code> is basically the following:</p>
-<ul>
-<li>players</li>
-<li>the lowercase first letter of the last name</li>
-<li>the first five letters of the last name</li>
-<li>the first two letters of the first name</li>
-<li>a digit which refers to whether a player who has the same name preceded that player. For instance, for Ray Allen, there was another Ray Allen. His digit is 02, while most other players have 01.</li>
-</ul>
-<p>Finally, after getting our unique links for both players who have a links, and players who do not, we pull the full career statistics for all players from 2003 to 2010 using <code>NBAPlayerPerGameStats</code>.</p>
-<p>There is one final data issue. The class of each of the columns <code>NBAPlayerPerGameStats</code> pulls in is not consistent. Across the eight datasets (2003 to 2010), the variable games or <code>g</code>, is classified as both character and numeric. To resolve this final issue, we simply define all variables as numeric with the exception of a few variables prior to using the command <code>unnest</code>.</p>
-<pre class="r"><code>CompleteDataSet = bind_rows( PullLinksCompl , PullLinksMissing ) %&gt;% 
-  mutate(PlayerInfo2 = purrr::map(PlayerInfo , ~ .x %&gt;% 
-                                    mutate_at(vars(-season, -tm, -lg, -pos), as.numeric))) %&gt;%
-  select(-PlayerInfo) %&gt;% 
-  tidyr::unnest(PlayerInfo2)
+#nizxevqbyp .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
 
-dput(CompleteDataSet , &quot;CompleteDataSet&quot;)</code></pre>
+#nizxevqbyp .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#nizxevqbyp .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#nizxevqbyp .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#nizxevqbyp .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#nizxevqbyp .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#nizxevqbyp .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#nizxevqbyp .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#nizxevqbyp .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#nizxevqbyp .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#nizxevqbyp .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#nizxevqbyp .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#nizxevqbyp .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#nizxevqbyp .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#nizxevqbyp .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#nizxevqbyp .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#nizxevqbyp .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#nizxevqbyp .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#nizxevqbyp .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#nizxevqbyp .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#nizxevqbyp .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#nizxevqbyp .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#nizxevqbyp .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#nizxevqbyp .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#nizxevqbyp .gt_left {
+  text-align: left;
+}
+
+#nizxevqbyp .gt_center {
+  text-align: center;
+}
+
+#nizxevqbyp .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#nizxevqbyp .gt_font_normal {
+  font-weight: normal;
+}
+
+#nizxevqbyp .gt_font_bold {
+  font-weight: bold;
+}
+
+#nizxevqbyp .gt_font_italic {
+  font-style: italic;
+}
+
+#nizxevqbyp .gt_super {
+  font-size: 65%;
+}
+
+#nizxevqbyp .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="nizxevqbyp" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Lags</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Mdl</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">Val</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">06</td>
+      <td class="gt_row gt_left">AICInt</td>
+      <td class="gt_row gt_right">53957.28</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">09</td>
+      <td class="gt_row gt_left">AICInt</td>
+      <td class="gt_row gt_right">53960.57</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">05</td>
+      <td class="gt_row gt_left">AICInt</td>
+      <td class="gt_row gt_right">53961.45</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">11</td>
+      <td class="gt_row gt_left">AICInt</td>
+      <td class="gt_row gt_right">53964.61</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">10</td>
+      <td class="gt_row gt_left">AICInt</td>
+      <td class="gt_row gt_right">53965.55</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">04</td>
+      <td class="gt_row gt_left">AICInt</td>
+      <td class="gt_row gt_right">53966.48</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>After deciding on the number of lags, we try modeling an interaction between temperature and precipitation intensity. We also try a second order polynomial as previously described.</p>
+<p>The best model is the model with an interaction, and the second order polynomial. We use a likelihood ratio test, as all three models are nested.</p>
+<p>After deciding on the model, we use a Bayesian work flow. Unfortunately, there is not enough computing power to check all of the lags, which is why we previously used a Frequentist work flow.</p>
+<p>The next step is model a prior. Ideally, one can use institutional knowledge to determine the prior. For this modeling exercise, we will use the function <code>get_prior</code> from the <code>brms</code> package to determine the prior. As a comparison, we also use a weak prior. All of the parameters have been transformed to have a mean of zero, and a standard deviation of one.</p>
+<p>We use the <code>brms</code> function <code>model_weights</code>. The <code>model_weights</code> provides a weighting system which judges the predictive accuracy of the posterior distribution. For a more extensive discussion, see <a href="https://discourse.mc-stan.org/t/model-stacking-and-loo-brms-models/4611">here</a>.</p>
+<p>The model weights are based on the Widely Applicable Information Criterion (WAIC). For a very good explanation and detailed breakdown, see: <a href="https://bookdown.org/ajkurz/Statistical_Rethinking_recoded/overfitting-regularization-and-information-criteria.html#using-information-criteria">here</a>.</p>
+<p>The below table shows the results.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#chbawjuegu .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#chbawjuegu .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#chbawjuegu .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#chbawjuegu .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#chbawjuegu .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#chbawjuegu .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#chbawjuegu .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#chbawjuegu .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#chbawjuegu .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#chbawjuegu .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#chbawjuegu .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#chbawjuegu .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#chbawjuegu .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#chbawjuegu .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#chbawjuegu .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#chbawjuegu .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#chbawjuegu .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#chbawjuegu .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#chbawjuegu .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#chbawjuegu .gt_left {
+  text-align: left;
+}
+
+#chbawjuegu .gt_center {
+  text-align: center;
+}
+
+#chbawjuegu .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#chbawjuegu .gt_font_normal {
+  font-weight: normal;
+}
+
+#chbawjuegu .gt_font_bold {
+  font-weight: bold;
+}
+
+#chbawjuegu .gt_font_italic {
+  font-style: italic;
+}
+
+#chbawjuegu .gt_super {
+  font-size: 65%;
+}
+
+#chbawjuegu .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="chbawjuegu" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  <thead class="gt_header">
+    <tr>
+      <th colspan="4" class="gt_heading gt_title gt_font_normal" style>Model Evaluation</th>
+    </tr>
+    <tr>
+      <th colspan="4" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Models</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">elpd_diff</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">se_diff</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">ModelWeights</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">CovidBayesianStdCensus</td>
+      <td class="gt_row gt_center">0.000</td>
+      <td class="gt_row gt_center">0.000</td>
+      <td class="gt_row gt_right">0.814</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">CovidBayesian10Census</td>
+      <td class="gt_row gt_center">-1.704</td>
+      <td class="gt_row gt_center">0.944</td>
+      <td class="gt_row gt_right">0.148</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">CovidBayesian10</td>
+      <td class="gt_row gt_center">-3.621</td>
+      <td class="gt_row gt_center">5.020</td>
+      <td class="gt_row gt_right">0.022</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">CovidBayesianStd</td>
+      <td class="gt_row gt_center">-3.939</td>
+      <td class="gt_row gt_center">4.951</td>
+      <td class="gt_row gt_right">0.016</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>As we can see there is not a considerable difference between the models. The <code>elpd</code> difference is smaller, or a similar size to the standard error. The model weights show that the <code>CovidBayesianStdCensus</code> model is the best model, but there is not a considerable difference between any of the four models. There is little difference between a weak, normally distributed prior, and Student’s T prior. There is also little difference between the addition of the census variables, and the model that does not have the census variables.</p>
 </div>
-<div id="take-a-look-at-the-data" class="section level2">
-<h2>Take a look at the data:</h2>
-<p>Now that we have the data, we can look at the average length of a career, average minutes, among other variables that represent basketball playing career.</p>
-<p>There are 949 unique players in the dataset.</p>
-<p>There are four variables that we could use to define length of career:</p>
-<ol style="list-style-type: decimal">
-<li>Starting age to ending age.</li>
-<li>Number of games</li>
-<li>Number of minutes</li>
-<li>Number of seasons</li>
-</ol>
-<p>We’ll show the distribution for each of these below:</p>
+<div id="checking-the-models" class="section level2">
+<h2>Checking the models:</h2>
+<p>Before looking at the credible intervals, and the mean estimate from the posterior distribution of our two temperature variables, we need to check the chains.</p>
+<p>The chains for all of the models can be found <a href="https://github.com/kieran11/WeatherCovid/tree/master/CovidAnalysis_files/figure-gfm">here</a>. There are four trace plots.</p>
+<p>As we can see the chains follow the caterpillar like shapes. To do these plots, we follow the great Soloman Kurtz <a href="https://bookdown.org/ajkurz/Statistical_Rethinking_recoded/markov-chain-monte-carlo.html#markov-chain-monte-carlo-1">book</a>, which is a <code>tidyverse</code> version of <a href="https://xcelab.net/rm/statistical-rethinking/">Statistical Rethinking</a> by Richard McElreath.</p>
+<pre class="r"><code>library(bayesplot)
+
+
+  TraceOut = mcmc_trace(dget(&quot;WeatherData/PosteriorDistr&quot;) %&gt;% 
+                          filter(Model == &quot;CovidBayesianStdCensus&quot;) %&gt;% select(-Model) ,
+             facet_args = list(ncol = 3), 
+             size = .15) +
+    labs(title = paste0(&quot;Trace Plots for Model: CovidBayesianStdCensus&quot; )) +
+    theme_classic() +
+    theme(legend.position = c(.95, .2))</code></pre>
+<p><img src="/post/2020-07-30-sixth-post_files/figure-html/tracePlt-1.png" width="672" /></p>
+<div id="analysis-1" class="section level3">
+<h3>Analysis:</h3>
+<p>The best model combination was the interaction model, where we modeled an interaction between the max temperature on a given day, and the precipitation intensity. In Statistical Rethinking, Richard McElreath notes that plotting interactions is a much more intuitive method to understand the effect.</p>
+<p><img src="/post/2020-07-30-sixth-post_files/figure-html/MarginalEffects-1.png" width="672" /></p>
 </div>
-<div id="starting-age" class="section level2">
-<h2>Starting Age:</h2>
-<p>The starting age to ending age shows the journey. A player like PJ Tucker may have entered the league at age 21, but then did not play again until the age of 27. He is now thriving at age 35. The duration of his career includes seasons played in Europe. Basketball Reference data does not capture that.</p>
-<p>The first plot looks at the distribution of the three age metrics. The dashed-red vertical line is the median value of each of the three metrics. This plot includes active players, or more specifically, players who have an entry for the 2019-2020 season.</p>
-<p><img src="/post/2020-06-30-second-post_files/figure-html/ageplt1-1.png" width="672" /></p>
-<p>The second plot is the same, however, we remove active players.</p>
-<p><img src="/post/2020-06-30-second-post_files/figure-html/ageplt2-1.png" width="672" /></p>
-<div id="number-of-minutes-and-games-played" class="section level3">
-<h3>Number of Minutes and Games Played</h3>
-<p>The number of games played is conceptually simple idea. However, it is hard to differentiate between a player who had low minutes played because of injuries, and a player who had low minutes played because of poor performance.</p>
-<p><img src="/post/2020-06-30-second-post_files/figure-html/PltOtherVars-1.png" width="672" /></p>
-<p>Including, or excluding current players does not change the distribution in particular.</p>
-<p><img src="/post/2020-06-30-second-post_files/figure-html/PltOtherVarsNtCurr-1.png" width="672" /></p>
-</div>
-</div>
-<div id="summary" class="section level2">
-<h2>Summary</h2>
-<p>Overall, the <code>ballr</code> package is intuitive to use, and using a couple of functions together can provide a powerful mechanism to pull lots of career data from Basketball-Reference.</p>
 </div>
 
     </div>
@@ -201,6 +907,675 @@ dput(CompleteDataSet , &quot;CompleteDataSet&quot;)</code></pre>
 
 
     
+
+    
+  </body>
+</html>
+
+: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#wqalsjebpg .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#wqalsjebpg .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#wqalsjebpg .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#wqalsjebpg .gt_left {
+  text-align: left;
+}
+
+#wqalsjebpg .gt_center {
+  text-align: center;
+}
+
+#wqalsjebpg .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#wqalsjebpg .gt_font_normal {
+  font-weight: normal;
+}
+
+#wqalsjebpg .gt_font_bold {
+  font-weight: bold;
+}
+
+#wqalsjebpg .gt_font_italic {
+  font-style: italic;
+}
+
+#wqalsjebpg .gt_super {
+  font-size: 65%;
+}
+
+#wqalsjebpg .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="wqalsjebpg" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_center gt_columns_bottom_border" rowspan="2" colspan="1">TempDaySince</th>
+      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="5">
+        <span class="gt_column_spanner">Range</span>
+      </th>
+    </tr>
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">[0,0.02]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.02,0.04]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.04,0.09]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.09,0.37]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.37,1]</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_right">5</td>
+      <td class="gt_row gt_right">270.0</td>
+      <td class="gt_row gt_right">113.0</td>
+      <td class="gt_row gt_right">91.0</td>
+      <td class="gt_row gt_right">49.5</td>
+      <td class="gt_row gt_right">35</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">6</td>
+      <td class="gt_row gt_right">273.5</td>
+      <td class="gt_row gt_right">118.0</td>
+      <td class="gt_row gt_right">94.5</td>
+      <td class="gt_row gt_right">52.0</td>
+      <td class="gt_row gt_right">39</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">7</td>
+      <td class="gt_row gt_right">278.0</td>
+      <td class="gt_row gt_right">123.5</td>
+      <td class="gt_row gt_right">97.0</td>
+      <td class="gt_row gt_right">53.0</td>
+      <td class="gt_row gt_right">41</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">8</td>
+      <td class="gt_row gt_right">285.5</td>
+      <td class="gt_row gt_right">129.0</td>
+      <td class="gt_row gt_right">101.5</td>
+      <td class="gt_row gt_right">55.0</td>
+      <td class="gt_row gt_right">44</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">9</td>
+      <td class="gt_row gt_right">291.5</td>
+      <td class="gt_row gt_right">136.0</td>
+      <td class="gt_row gt_right">104.0</td>
+      <td class="gt_row gt_right">62.0</td>
+      <td class="gt_row gt_right">48</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">10</td>
+      <td class="gt_row gt_right">297.0</td>
+      <td class="gt_row gt_right">129.0</td>
+      <td class="gt_row gt_right">108.0</td>
+      <td class="gt_row gt_right">71.0</td>
+      <td class="gt_row gt_right">50</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">11</td>
+      <td class="gt_row gt_right">301.0</td>
+      <td class="gt_row gt_right">129.0</td>
+      <td class="gt_row gt_right">110.0</td>
+      <td class="gt_row gt_right">77.5</td>
+      <td class="gt_row gt_right">54</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">12</td>
+      <td class="gt_row gt_right">309.0</td>
+      <td class="gt_row gt_right">140.0</td>
+      <td class="gt_row gt_right">112.0</td>
+      <td class="gt_row gt_right">82.0</td>
+      <td class="gt_row gt_right">64</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">13</td>
+      <td class="gt_row gt_right">312.0</td>
+      <td class="gt_row gt_right">140.0</td>
+      <td class="gt_row gt_right">112.0</td>
+      <td class="gt_row gt_right">89.0</td>
+      <td class="gt_row gt_right">71</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">14</td>
+      <td class="gt_row gt_right">317.0</td>
+      <td class="gt_row gt_right">145.0</td>
+      <td class="gt_row gt_right">116.0</td>
+      <td class="gt_row gt_right">100.0</td>
+      <td class="gt_row gt_right">77</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<ol start="3" style="list-style-type: decimal">
+<li>Precipitation Intensity:</li>
+</ol>
+<p><img src="/post/2020-07-30-fifth-post_files/figure-html/pltprecipint-1.png" width="672" /></p>
+<p>The below table shows the distribution by range of max temperature.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#wlzakegcxt .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#wlzakegcxt .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#wlzakegcxt .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#wlzakegcxt .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#wlzakegcxt .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#wlzakegcxt .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#wlzakegcxt .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#wlzakegcxt .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#wlzakegcxt .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#wlzakegcxt .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#wlzakegcxt .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#wlzakegcxt .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#wlzakegcxt .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#wlzakegcxt .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#wlzakegcxt .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#wlzakegcxt .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#wlzakegcxt .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#wlzakegcxt .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#wlzakegcxt .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#wlzakegcxt .gt_left {
+  text-align: left;
+}
+
+#wlzakegcxt .gt_center {
+  text-align: center;
+}
+
+#wlzakegcxt .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#wlzakegcxt .gt_font_normal {
+  font-weight: normal;
+}
+
+#wlzakegcxt .gt_font_bold {
+  font-weight: bold;
+}
+
+#wlzakegcxt .gt_font_italic {
+  font-style: italic;
+}
+
+#wlzakegcxt .gt_super {
+  font-size: 65%;
+}
+
+#wlzakegcxt .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="wlzakegcxt" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_center gt_columns_bottom_border" rowspan="2" colspan="1">TempDaySince</th>
+      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="5">
+        <span class="gt_column_spanner">Range</span>
+      </th>
+    </tr>
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">[0,0.0004]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.0004,0.0006]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.0006,0.0008]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.0008,0.0022]</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">(0.0022,0.139]</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_right">5</td>
+      <td class="gt_row gt_right">525.0</td>
+      <td class="gt_row gt_right">160.0</td>
+      <td class="gt_row gt_right">54.0</td>
+      <td class="gt_row gt_right">45.0</td>
+      <td class="gt_row gt_right">33.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">6</td>
+      <td class="gt_row gt_right">547.5</td>
+      <td class="gt_row gt_right">163.0</td>
+      <td class="gt_row gt_right">55.0</td>
+      <td class="gt_row gt_right">47.0</td>
+      <td class="gt_row gt_right">34.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">7</td>
+      <td class="gt_row gt_right">564.0</td>
+      <td class="gt_row gt_right">172.0</td>
+      <td class="gt_row gt_right">56.0</td>
+      <td class="gt_row gt_right">50.0</td>
+      <td class="gt_row gt_right">36.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">8</td>
+      <td class="gt_row gt_right">578.5</td>
+      <td class="gt_row gt_right">177.0</td>
+      <td class="gt_row gt_right">58.5</td>
+      <td class="gt_row gt_right">52.0</td>
+      <td class="gt_row gt_right">40.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">9</td>
+      <td class="gt_row gt_right">587.0</td>
+      <td class="gt_row gt_right">186.0</td>
+      <td class="gt_row gt_right">62.5</td>
+      <td class="gt_row gt_right">54.0</td>
+      <td class="gt_row gt_right">42.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">10</td>
+      <td class="gt_row gt_right">579.0</td>
+      <td class="gt_row gt_right">188.0</td>
+      <td class="gt_row gt_right">66.5</td>
+      <td class="gt_row gt_right">55.0</td>
+      <td class="gt_row gt_right">44.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">11</td>
+      <td class="gt_row gt_right">595.0</td>
+      <td class="gt_row gt_right">193.0</td>
+      <td class="gt_row gt_right">67.0</td>
+      <td class="gt_row gt_right">57.0</td>
+      <td class="gt_row gt_right">47.5</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">12</td>
+      <td class="gt_row gt_right">595.0</td>
+      <td class="gt_row gt_right">194.5</td>
+      <td class="gt_row gt_right">70.0</td>
+      <td class="gt_row gt_right">61.5</td>
+      <td class="gt_row gt_right">50.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">13</td>
+      <td class="gt_row gt_right">587.0</td>
+      <td class="gt_row gt_right">199.0</td>
+      <td class="gt_row gt_right">74.5</td>
+      <td class="gt_row gt_right">64.0</td>
+      <td class="gt_row gt_right">54.0</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_right">14</td>
+      <td class="gt_row gt_right">589.0</td>
+      <td class="gt_row gt_right">199.0</td>
+      <td class="gt_row gt_right">79.0</td>
+      <td class="gt_row gt_right">67.0</td>
+      <td class="gt_row gt_right">62.0</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>Both the precipitation probability, and the precipitation intensity show a similar pattern. Greater amounts of rain are associated with fewer cases, and the greater the lag of precipation probability of intensity, the greater the number of cases.</p>
+</div>
+<div id="cases-and-stage-openings" class="section level2">
+<h2>Cases and Stage Openings:</h2>
+<p>The plot below shows the change in new cases over time. The background colours show the period of each stage. For the pre-lockdown, the background is red.</p>
+<p><img src="/post/2020-07-30-fifth-post_files/figure-html/CasesStagePlt-1.png" width="672" /></p>
+<p>The next plot shows the same idea, but instead of showing the stages, it shows the seven day lag since the new stage of lockdown was imposed.</p>
+<p><img src="/post/2020-07-30-fifth-post_files/figure-html/CasesStagePlt1-1.png" width="672" /></p>
+<p>Finally, the plot below shows the twelve day lag since the last stage of lockdown occurred. It is important to note that we do not have enough data to do the 14 day lag.</p>
+<p><img src="/post/2020-07-30-fifth-post_files/figure-html/CasesStagePlt2-1.png" width="672" /></p>
+<p>Overall, it looks like the one week plot is the most predictive, but this is simply just a visually inspection.</p>
+</div>
+
+    </div>
+  </article>
+
+  
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          <li>
+            <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+          </li>
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" alt="Img link to Hugo website" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
 
     
   </body>
