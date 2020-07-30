@@ -306,3 +306,32 @@ CovidME
 
 ```
 
+Finally, we look at the posterior distribution of our parameters of interst, the weather variables. 
+
+```{r MainParams}
+
+CheckMainParams = dget("WeatherData/PosteriorDistr") %>% 
+  select(b_lag_temperatureMax_06,  Model) %>% 
+  group_by(Model) %>% 
+  mutate(rown = row_number() ) %>% 
+  ungroup() %>% 
+  tidyr::spread(Model, b_lag_temperatureMax_06)
+
+CheckMainParams = dget("WeatherData/PosteriorDistr") %>% 
+  select(b_lag_temperatureMax_06, b_lag_temp_sqr,  `b_lag_temperatureMax_06:lag_precipIntensity_06`,
+         b_lag_precipIntensity_06 , Model) %>% 
+  tidyr::gather(Var, Value, -Model) %>% 
+  ggplot(., aes(x = Value, color = Model)) +
+  geom_density() +
+  geom_vline(xintercept = 0) +
+  theme_classic() +
+  facet_wrap(~Var) +
+  theme(legend.position = "bottom") +
+  labs(x = "Posterior Parameter Distribution", colour = "")
+  
+CheckMainParams
+
+
+
+```
+
