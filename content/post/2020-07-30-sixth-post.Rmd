@@ -2,7 +2,7 @@
 title: New Cases Analysis
 author: ''
 date: '2020-07-31'
-slug: fifth-post
+slug: sixth-post
 categories:
   - R
 tags: []
@@ -306,7 +306,7 @@ CovidME
 
 ```
 
-Finally, we look at the posterior distribution of our parameters of interst, the weather variables. 
+Finally, we look at the posterior distribution of our parameters of interest, the weather variables. 
 
 ```{r MainParams}
 
@@ -321,13 +321,13 @@ CheckMainParams = dget("WeatherData/PosteriorDistr") %>%
   select(b_lag_temperatureMax_06, b_lag_temp_sqr,  `b_lag_temperatureMax_06:lag_precipIntensity_06`,
          b_lag_precipIntensity_06 , Model) %>% 
   tidyr::gather(Var, Value, -Model) %>% 
-  ggplot(., aes(x = Value, color = Model)) +
+  ggplot(., aes(x = Value)) +
   geom_density() +
   geom_vline(xintercept = 0) +
   theme_classic() +
   facet_wrap(~Var) +
   theme(legend.position = "bottom") +
-  labs(x = "Posterior Parameter Distribution", colour = "")
+  labs(x = "Posterior Parameter Distribution")
   
 CheckMainParams
 
