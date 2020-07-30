@@ -2,7 +2,7 @@
 title: Get NBA Draft Data
 author: ''
 date: '2020-07-26'
-slug: second-post
+slug: third-post
 categories:
   - R
 tags: []

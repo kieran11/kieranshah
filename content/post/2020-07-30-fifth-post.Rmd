@@ -126,7 +126,7 @@ library(rlang)
 library(ggplot2)
 library(gt)
 
-WeatherCovid = dget("Data/WeatherCasesCA")
+WeatherCovid = dget("WeatherData/WeatherCasesCA")
 
 
 ```
