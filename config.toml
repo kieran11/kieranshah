@@ -6,9 +6,6 @@ googleAnalytics = ""
 disqusShortname = ""
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
-[permalinks]
-    post = "Current"
-
 [[menu.main]]
     name = "About"
     url = "/about/"
