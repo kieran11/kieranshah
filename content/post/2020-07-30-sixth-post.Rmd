@@ -283,6 +283,41 @@ TraceOut
 
 ### Analysis: 
 
+Next, we look at the posterior distribution of our parameters of interest, the weather variables. When we look at the posterior distribution for the weather variables, we see that the 95% credible intervals include zero for `lag_temperatureMax_06` and `lag_temp_sqr`. The other two weather variables are the interaction between temperature and precipitation intensity, and the lag of precipitation intensity`lag_precipIntensity_06`. The credible intervals for both of these variables exclude zero. 
+
+All of the models can be found [here](https://github.com/kieran11/WeatherCovid/tree/master/CovidAnalysis_files/figure-gfm). 
+
+
+```{r MainParams}
+
+
+CheckMainParams = dget("Data/PosteriorDistr") %>%
+  filter(Model == "CovidBayesianStdCensus") %>% 
+  select(b_lag_temperatureMax_06, b_lag_temp_sqr,  `b_lag_temperatureMax_06:lag_precipIntensity_06`,
+         b_lag_precipIntensity_06 ) %>% 
+  tidyr::gather(Var, Value) 
+
+
+RemoveOutliers = CheckMainParams %>% 
+  group_by(Var) %>% 
+  summarise(Lowest = quantile(Value, .025),
+            Highest = quantile(Value, .975)) %>% 
+  ungroup()
+
+MainParamsPlt = CheckMainParams %>% 
+  inner_join(RemoveOutliers, by = "Var") %>% 
+  filter(Value <= Highest & Value >= Lowest) %>% 
+  ggplot(., aes(x = Value, fill = "blue")) +
+  geom_density() + 
+  theme_classic() +
+  geom_hline(yintercept = 0, colour = "white") +
+  facet_wrap(~Var , scales = "free_y") +
+  theme(legend.position = "bottom") +
+  labs(x = "Posterior Parameter Distribution", colour = "")
+  
+MainParamsPlt
+
+```
 
 The best model combination was the interaction model, where we modeled an interaction between the max temperature on a given day, and the precipitation intensity. In Statistical Rethinking, Richard McElreath notes that plotting interactions is a much more intuitive method to understand the effect. 
 
@@ -305,33 +340,3 @@ CovidME
 
 
 ```
-
-Finally, we look at the posterior distribution of our parameters of interest, the weather variables. 
-
-```{r MainParams}
-
-CheckMainParams = dget("WeatherData/PosteriorDistr") %>% 
-  select(b_lag_temperatureMax_06,  Model) %>% 
-  group_by(Model) %>% 
-  mutate(rown = row_number() ) %>% 
-  ungroup() %>% 
-  tidyr::spread(Model, b_lag_temperatureMax_06)
-
-CheckMainParams = dget("WeatherData/PosteriorDistr") %>% 
-  select(b_lag_temperatureMax_06, b_lag_temp_sqr,  `b_lag_temperatureMax_06:lag_precipIntensity_06`,
-         b_lag_precipIntensity_06 , Model) %>% 
-  tidyr::gather(Var, Value, -Model) %>% 
-  ggplot(., aes(x = Value)) +
-  geom_density() +
-  geom_vline(xintercept = 0) +
-  theme_classic() +
-  facet_wrap(~Var) +
-  theme(legend.position = "bottom") +
-  labs(x = "Posterior Parameter Distribution")
-  
-CheckMainParams
-
-
-
-```
-
