@@ -329,6 +329,7 @@ CovidME = dget("WeatherData/ConditionalEffects") %>%
   select(lag_temperatureMax_06 , lag_precipIntensity_06, estimate__, 
          lower__,  upper__, Model) %>% 
   filter(estimate__ >=0 & Model == "CovidBayesianStdCensus") %>% 
+  mutate(lag_precipIntensity_06= factor(lag_precipIntensity_06, levels = c("-1", "0", "1") )) %>% 
   ggplot(., aes(x = lag_temperatureMax_06, y = estimate__)) +
   geom_line() +
   geom_ribbon(aes(ymin=lower__ , ymax=upper__), alpha=0.2) +
@@ -340,3 +341,11 @@ CovidME
 
 
 ```
+
+The plot above shows the interaction effect. When precipitation intensity is one standard deviation below mean, we see that as temperature increases, the estimated new cases rises. However, when precipitation intensity is one standard deviation above the mean, we see opposite. As temperature rises, estimated new cases decline. When precipitation intensity is at the mean, then temperature has little effect on estimated new cases. 
+
+## Limitations and Conclusions
+
+Overall, there is an effect of weather on the new cases in California. To summarize the interaction effect, good weather is associated with an increase in new cases. 
+
+However, there are major limitations. The dataset does not have testing numbers per day. Better weather may be correlated with an increase in testing, which in turn, would lead to more new cases discovered. Testing data would significantly improve this analysis. 
