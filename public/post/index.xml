@@ -6,40 +6,51 @@
     <description>Recent content in Posts on Kieran Shah&#39;s Data Science Examples</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 31 Jul 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 06 Aug 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
+      <title>Prediciton with Python</title>
+      <link>/2020/08/06/prediciton-with-python/</link>
+      <pubDate>Thu, 06 Aug 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/2020/08/06/prediciton-with-python/</guid>
+      <description>R Markdown  import pandas as pd import numpy as np AnalyticalDS = pd.read_csv(&amp;#39;NBAData/AnalysisDS.csv&amp;#39;) First, we get the variable names.
+ Dimension = AnalyticalDS.shape print(Dimension) ## (949, 50) The next step is to finalize the dataset, the training dataset, and then the testing dataset. We first need to select the variables of interest, and then divide the data up.
+ AboveMP_zero = AnalyticalDS[&amp;#39;mp&amp;#39;] &amp;gt; 0 NotCurrent = AnalyticalDS[&amp;#39;LastSeason&amp;#39;] != &amp;quot;2019-20&amp;quot; AnalyticalDS_2 = AnalyticalDS[AboveMP_zero] AnalyticalDS_2_a = AnalyticalDS_2[NotCurrent] ## /Users/rebeccashapiro/Library/r-miniconda/envs/r-reticulate/bin/python:1: UserWarning: Boolean Series key will be reindexed to match DataFrame index.</description>
+    </item>
+    
+    <item>
       <title>New Cases Analysis</title>
-      <link>/current/</link>
+      <link>/2020/07/31/new-cases-analysis/</link>
       <pubDate>Fri, 31 Jul 2020 00:00:00 +0000</pubDate>
       
-      <guid>/current/</guid>
-      <description>Analysis:The purpose of this analysis is to evaluate the impact of our three weather metrics on new Covid-19 cases in California. The complete and large dataset can be found here.
+      <guid>/2020/07/31/new-cases-analysis/</guid>
+      <description>Analysis: The purpose of this analysis is to evaluate the impact of our three weather metrics on new Covid-19 cases in California. The complete and large dataset can be found here.
 The complete code for this post can be found here:.
 The basic California model will hypothesize that the stages of each opening should increase new cases after a week. Similarly, weather should work in a similar pattern. Better weather should encourage more outdoor activity, and we should see a drop in cases up until a certain point.</description>
     </item>
     
     <item>
       <title>Getting Weather and Covid Data</title>
-      <link>/current/</link>
+      <link>/2020/07/27/getting-weather-and-covid-data/</link>
       <pubDate>Mon, 27 Jul 2020 00:00:00 +0000</pubDate>
       
-      <guid>/current/</guid>
-      <description>Weather DataMany epidemiological experts have linked weather to rising or falling Covid-19 cases. The first two steps of the process of getting data is as follows:
+      <guid>/2020/07/27/getting-weather-and-covid-data/</guid>
+      <description>Weather Data Many epidemiological experts have linked weather to rising or falling Covid-19 cases. The first two steps of the process of getting data is as follows:
 The Covid-19 cases by county in the United States (US) can be found here:.
-The weather data comes from Darksky. We use the package darksky. darksky is a wrapper for the API DarkSky provides.
-The package darksky and its documentation is here:.</description>
+ The weather data comes from Darksky. We use the package darksky. darksky is a wrapper for the API DarkSky provides.
+  The package darksky and its documentation is here:.</description>
     </item>
     
     <item>
       <title>Survival Analysis</title>
-      <link>/current/</link>
+      <link>/2020/07/27/survival-analysis/</link>
       <pubDate>Mon, 27 Jul 2020 00:00:00 +0000</pubDate>
       
-      <guid>/current/</guid>
+      <guid>/2020/07/27/survival-analysis/</guid>
       <description>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.
 The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.
 As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.
@@ -48,11 +59,11 @@ Next, we look at the seasons played:</description>
     
     <item>
       <title>Get NBA Draft Data</title>
-      <link>/current/</link>
+      <link>/2020/07/26/get-nba-draft-data/</link>
       <pubDate>Sun, 26 Jul 2020 00:00:00 +0000</pubDate>
       
-      <guid>/current/</guid>
-      <description>Getting draft dataAn interesting aspect of evaluating average player length is looking at their original draft position. The below code uses Basketball Reference and rvest to pull the drafts from 1985 to 2010.
+      <guid>/2020/07/26/get-nba-draft-data/</guid>
+      <description>Getting draft data An interesting aspect of evaluating average player length is looking at their original draft position. The below code uses Basketball Reference and rvest to pull the drafts from 1985 to 2010.
 This post uses the two packages rvest and the tidyverse package.
 The code below looks through the NBA draft pages on Basketball Reference. It pulls the html tag table.
 When the code reads in the data, the first few variables do not have assigned variable names.</description>
@@ -60,11 +71,11 @@ When the code reads in the data, the first few variables do not have assigned va
     
     <item>
       <title>NBA Average Career Length</title>
-      <link>/current/</link>
+      <link>/2020/06/30/nba-average-career-length/</link>
       <pubDate>Tue, 30 Jun 2020 00:00:00 +0000</pubDate>
       
-      <guid>/current/</guid>
-      <description>BallrThe ballr package provides easy to use function to access the vast data resources on basketball-reference.com.
+      <guid>/2020/06/30/nba-average-career-length/</guid>
+      <description>Ballr The ballr package provides easy to use function to access the vast data resources on basketball-reference.com.
 To get historical data for a defined group of players, we first pick a few given seasons. For our example, we pick the 2003 to the 2010 seasons.
 The complete code to reproduce this post can be found here
 Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min(season = .x) ) %&amp;gt;% bind_rows(.</description>
@@ -72,12 +83,12 @@ Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min
     
     <item>
       <title>Student Forecast Model</title>
-      <link>/current/</link>
+      <link>/2020/06/07/student-forecast-model/</link>
       <pubDate>Sun, 07 Jun 2020 00:00:00 +0000</pubDate>
       
-      <guid>/current/</guid>
+      <guid>/2020/06/07/student-forecast-model/</guid>
       <description>This post attempts to provide an example using simulated data of how to forecast student enrollment at a four-year college or university. It uses Markov chains with simulated data. The complete code to reproduce this post can be found here
-Describe a model:In most North Americana four-year universities, students progress through the four-year curriculum, and then graduate after four years. However, some students leave after the first year, other after their third year.</description>
+Describe a model: In most North Americana four-year universities, students progress through the four-year curriculum, and then graduate after four years. However, some students leave after the first year, other after their third year.</description>
     </item>
     
   </channel>
