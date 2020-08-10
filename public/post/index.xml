@@ -12,14 +12,14 @@
     
     
     <item>
-      <title>Prediciton with Python</title>
-      <link>/2020/08/06/prediciton-with-python/</link>
+      <title>Prediction with Python</title>
+      <link>/2020/08/06/prediction-with-python/</link>
       <pubDate>Thu, 06 Aug 2020 00:00:00 +0000</pubDate>
       
-      <guid>/2020/08/06/prediciton-with-python/</guid>
-      <description>R Markdown  import pandas as pd import numpy as np AnalyticalDS = pd.read_csv(&amp;#39;NBAData/AnalysisDS.csv&amp;#39;) First, we get the variable names.
- Dimension = AnalyticalDS.shape print(Dimension) ## (949, 50) The next step is to finalize the dataset, the training dataset, and then the testing dataset. We first need to select the variables of interest, and then divide the data up.
- AboveMP_zero = AnalyticalDS[&amp;#39;mp&amp;#39;] &amp;gt; 0 NotCurrent = AnalyticalDS[&amp;#39;LastSeason&amp;#39;] != &amp;quot;2019-20&amp;quot; AnalyticalDS_2 = AnalyticalDS[AboveMP_zero] AnalyticalDS_2_a = AnalyticalDS_2[NotCurrent] ## /Users/rebeccashapiro/Library/r-miniconda/envs/r-reticulate/bin/python:1: UserWarning: Boolean Series key will be reindexed to match DataFrame index.</description>
+      <guid>/2020/08/06/prediction-with-python/</guid>
+      <description>Using Python and Reticulate: Reticulate is a R package that allows us to implement python within an R markdown file. This post shows how to do some basic predictive analysis using the same NBA dataset we used in prior posts.
+We first need to read in the data. Below is some basic code to bring in a csv file.
+ import pandas as pd import numpy as np AnalyticalDS = pd.</description>
     </item>
     
     <item>

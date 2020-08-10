@@ -1,5 +1,5 @@
 ---
-title: Prediciton with Python
+title: Prediction with Python
 author: ''
 date: '2020-08-06'
 slug: sixth-post
@@ -12,7 +12,9 @@ tags: []
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
-## R Markdown
+## Using Python and Reticulate:
+
+Reticulate is a `R` package that allows us to implement `python` within an `R markdown` file. This post shows how to do some basic predictive analysis using the same NBA dataset we used in prior posts.  
 
 
 ```{r pckgs}
@@ -25,7 +27,7 @@ library(ggplot2)
 ```
 
 
-
+We first need to read in the data. Below is some basic code to bring in a csv file. 
 
 ```{python, echo=TRUE}
 
@@ -35,6 +37,10 @@ import numpy as np
 AnalyticalDS = pd.read_csv('NBAData/AnalysisDS.csv')
 
 ```
+
+The plot below shows the distribution of minutes played for all players who were active. The code below is `R`. It shows the distribution of the minutes played variable `mp`. We use minutes played instead of seasons because it is a better representation of longevity than seasons. 
+
+However, the `R` plot shows both: 
 
 ```{r showR}
 
@@ -51,19 +57,20 @@ R_plt
 ```
 
 
-First, we get the variable names. 
+The next section code shows the same two plots but in `python`. As far as I can tell, there is not a perfect substitution for `facet_wrap` with `scale = 'free'`. You can import a `python` module [ggplot](http://ggplot.yhathq.com/#:~:text=ggplot%20is%20a%20plotting%20system,plots%20quickly%20with%20minimal%20code.), but that seems to defeat the purpose. The major advantage of `scales = 'free'` is that you show the distrbution for two very different variables. 
 
+Instead, we use the `seaborn` module to show the same plots: 
 
-```{python mltData , echo = TRUE}
+```{python mltData }
 
 Dimension = AnalyticalDS.shape
 
-print(Dimension)
 
 ```
 
+The first plot shows the `distplot` function for minutes played. The second plot is the same, but for `NumberOfSeasons`. 
 
-```{python DenPymp}
+```{python DenPymp, echo = TRUE}
 
 import seaborn as sns
 
@@ -80,7 +87,7 @@ sns.distplot(AnalyticalDS['NumberOfSeasons'], hist = False)
 ```
 
 
-The next step is to finalize the dataset, the training dataset, and then the testing dataset. We first need to select the variables of interest, and then divide the data up. 
+The next step is to finalize the dataset, the training dataset, and then the testing dataset. We first need to select the variables of interest, and then divide the data up. The below code removes any active players and players who had zero minutes. It also selects the variables we will need for our analysis.  
 
 ```{python flt, echo = TRUE}
 
@@ -103,6 +110,11 @@ CheckSize = AnalyticDS_4.shape
 
 
 ```
+
+This next section make the float variable `PickNumber` a categorical variable, and then a dummy variable with `pandas` module, using the function `get_dummies`. We then scale our continuous variables with a mean of zero, and a standard deviation of one.  
+
+Finally, we divide our data into a training and test datasets. 
+
 
 ```{python slct , eval = TRUE}
 
@@ -146,7 +158,9 @@ Analytic_scaled_df = pd.merge(PickNumberDummy,Analytical_scaled_c,on='link')
 
 ```
 
+The first algorithm we use is a ramdom forest. There is a very good description of how the algorithm actually works is [here](https://medium.com/datadriveninvestor/random-forest-regression-9871bc9a25eb). There are many ways to evaluate a random forest algorithm; however, we will not do that here. It is possible to visualize a tree, and look at the Variable Importance. For an extensive discussion, see [here](https://towardsdatascience.com/random-forest-in-python-24d0893d51c0).
 
+The basic idea of a random forest is that it aggregates decision trees. Bagging uses a decision tree on a different dataset with sample with replacement technique.  
 
 ```{python , results = 'hide'}
 
@@ -170,6 +184,10 @@ Results = regressor.fit(X_trainDF_2, Y_trainDF)
 predictions = regressor.predict(X_test_DF_2)
 
 ```
+
+## Lasso
+
+The next technique uses a lasso regression. Lasso regressions are [unstable](https://stats.stackexchange.com/questions/365938/what-causes-lasso-to-be-unstable-for-feature-selection), which means that they do not consistently select the same features. Random forests are far more stable, which is a big advantage. To get out around the unstable nature of Lasso, we first try to bootstrap the lasso regression. We simply use 100 bootstraps for this example. Lasso is a simple linear regression, but with an extra parameter for shrinkage. Shrinkage attempts to minimize the parameters towards zero. 
 
 ```{python Baseline, results = 'hide'}
 
@@ -254,6 +272,7 @@ predictions_lasso = lasso_reg.predict(X_test_DF_2)
 ```
 	
 
+
 ```{python evalMdls , eval = TRUE, results = 'hide'}
 
 import statistics
@@ -277,11 +296,24 @@ EvaluationsFinal = pd.DataFrame(list(zip( Nms, Rslts)),
 
 ```
 
+The final comparison is uses a simple grouped mean. We take the mean by the category of draft pick. A high draft pick, medium draft pick, etc... 
+
+The goal is to at least outperform the basic grouped mean. 
+
+The final table shows that the bootstrapped lasso performs the best. The metric is simply the mean absolute error. 
+
+
 ```{r}
 
 py$EvaluationsFinal %>% 
   gt()
 
 ```
+
+## Summary
+
+The post is pretty simple in that it takes three methods, and attempts to use some basic supervised learning to best predict minutes played among a group of NBA players who are no longer active. 
+
+We use a random forest and a lasso regresion, and a third method that uses the lasso algorithm, but with a bootstrap. Overall, we find that the bootstrap lasso performs the best, as the above table can be seen above. 
 
 
