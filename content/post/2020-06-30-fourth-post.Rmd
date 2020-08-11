@@ -1,7 +1,7 @@
 ---
 title: Survival Analysis
 author: ''
-date: '2020-07-27'
+date: '2020-07-26'
 slug: fourth-post
 categories:
   - R
@@ -27,6 +27,8 @@ library(gt)
 
 
 The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career. 
+
+The code can be found [here](https://github.com/kieran11/averageagenba/blob/master/SurvivalAnalysis.Rmd).
 
 The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position. 
 
@@ -100,7 +102,7 @@ While both metrics are interesting, minutes played better describes a players ca
 
 The next step is to develop a regression model. We model hazard ratios. 
 
-With Basketball-Reference, there are basically infinite combinations of models we could consider. One method of to develop this model could be to put all the possible factors that influence time until retirement, and use a lasso regression to determine which variables are best. However, there are problems with consistency with lasso regressions, see [here](https://stats.stackexchange.com/questions/348320/consistency-of-lasso):
+With Basketball-Reference, there are basically infinite combinations of models we could consider. One method to develop this model could be to put all the possible factors that influence time until retirement, and use a lasso regression to determine which variables are best. However, there are problems with consistency with lasso regressions, see [here](https://stats.stackexchange.com/questions/348320/consistency-of-lasso):
 
 Finally, we could use institutional knowledge. Institutional knowledge of how the Data Generated Process works allows us to use knowledge in an area to model a process. In this case, we understand that players who are better, get longer contracts, and can usually play longer as their skills atrophy. 
 
@@ -110,7 +112,7 @@ To model minutes, we will do so based on the players first season. We are not in
 
 The variables of interest will be player statistics after their first year. We will consider both traditional statistics like points, assists, and rebounds, and more modern statistics like expected field goal percentage. A previous post showed how to pull draft position. We will also use draft position. Finally, we will test whether the first team a player plays on influences the length of their career.
 
-After pulling each of the players season, we standardize all numeric variables. Andrew Gelman has a post about this [here] (https://statmodeling.stat.columbia.edu/2009/07/11/when_to_standar/). In short, when comparing predictors within models, it is very useful to standardize the predictor variables as it allows us to look to see which predictors are the most predictive. To standardize variables in `R`, we use the function `scale`. 
+After pulling each of the players season, we standardize all numeric variables. Andrew Gelman has a post about this [here](https://statmodeling.stat.columbia.edu/2009/07/11/when_to_standar/). In short, when comparing predictors within models, it is very useful to standardize the predictor variables as it allows us to look to see which predictors are the most predictive. To standardize variables in `R`, we use the function `scale`. 
 
 ```{r Controls}
 
@@ -329,7 +331,7 @@ SchoenfeldInstPlot = GetSchoenfeldInst$y %>%
 
 ## Proportional Hazard Assumption
 
-A key assumption in a Cox Proportional Hazard model is that that the proportional. This assumption simply states that the ratio of hazards must be constant over time. To check whether this assumption hols, we do two things:
+A key assumption in a Cox Proportional Hazard model is that that the proportional. This assumption simply states that the ratio of hazards must be constant over time. To check whether this assumption holds, we do two things:
 
 1.  Check whether the interaction between time (minutes in our case) and the predictors are statistically significant. 
 
@@ -374,6 +376,7 @@ SchoenfeldInstPlot
 
 ```
 
+To resolve the violation of proportional hazards, we include an interaction between the variable which violates the proportional hazard assumption and the time variable, `mp` in our models. 
 
 ## Picking a model:
 
@@ -466,3 +469,7 @@ Second, an increase of on standard deviations of free throw attempts is associat
 This is obviously a short blog post on this topic. There is no information on contracts, player earnings, injuries, all of which are much clearer determinants of minutes played in a career than any of the predictors used. 
 
 Furthermore, this is not a predictive model. This model is a descriptive model which attempts to understand what factors best explain why players who played during the era of 2003 to 2010 played as many minutes as they did over the course of their career. 
+
+## Summary
+
+This post attempts to understand NBA player longevity through Cox models, and comparing two methods of model selection. The first model selection method uses Lasso regression, a form of supervised learning, to find the best model. The second model uses institutional knowledge to select the model. 
