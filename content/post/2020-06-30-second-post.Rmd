@@ -13,6 +13,8 @@ tags: []
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
+The purpose of this post is to show how to use the `ballr` package to get historical NBA data, and after getting the data, find the best metric to use to determine longevity. 
+
 ## Ballr
 
 The `ballr` package provides easy to use function to access the vast data resources on basketball-reference.com. 
@@ -275,4 +277,4 @@ PltRestOfVarsNotCurrent
 
 ## Summary
 
-Overall, the `ballr` package is intuitive to use, and using a couple of functions together can provide a powerful mechanism to pull lots of career data from Basketball-Reference. 
+Overall, the `ballr` package is intuitive to use, and using a couple of functions together can provide a powerful mechanism to pull lots of career data from Basketball-Reference. This post looked at different longevity metrics for player careers. Overall, minutes played, or `mp` is probably the best metric as it provides information on length of career and quality of career.  
