@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.74.3" />
+<meta name="generator" content="Hugo 0.72.0" />
 
 
 <title>NBA Average Career Length - Kieran Shah&#39;s Data Science Examples</title>
@@ -75,6 +75,7 @@
       
 
 
+<p>The purpose of this post is to show how to use the <code>ballr</code> package to get historical NBA data, and after getting the data, find the best metric to use to determine longevity.</p>
 <div id="ballr" class="section level2">
 <h2>Ballr</h2>
 <p>The <code>ballr</code> package provides easy to use function to access the vast data resources on basketball-reference.com.</p>
@@ -163,7 +164,7 @@ dput(CompleteDataSet , &quot;CompleteDataSet&quot;)</code></pre>
 </div>
 <div id="summary" class="section level2">
 <h2>Summary</h2>
-<p>Overall, the <code>ballr</code> package is intuitive to use, and using a couple of functions together can provide a powerful mechanism to pull lots of career data from Basketball-Reference.</p>
+<p>Overall, the <code>ballr</code> package is intuitive to use, and using a couple of functions together can provide a powerful mechanism to pull lots of career data from Basketball-Reference. This post looked at different longevity metrics for player careers. Overall, minutes played, or <code>mp</code> is probably the best metric as it provides information on length of career and quality of career.</p>
 </div>
 
     </div>

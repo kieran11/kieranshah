@@ -1,7 +1,7 @@
 ---
 title: Survival Analysis
 author: ''
-date: '2020-07-27'
+date: '2020-07-26'
 slug: fourth-post
 categories:
   - R
@@ -11,6 +11,7 @@ tags: []
 
 
 <p>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.</p>
+<p>The code can be found <a href="https://github.com/kieran11/averageagenba/blob/master/SurvivalAnalysis.Rmd">here</a>.</p>
 <p>The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.</p>
 <p>As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.</p>
 <p><img src="/post/2020-06-30-fourth-post_files/figure-html/CurvesMP-1.png" width="672" /></p>
@@ -21,14 +22,14 @@ tags: []
 <div id="cox-proportional-hazard" class="section level2">
 <h2>Cox Proportional Hazard:</h2>
 <p>The next step is to develop a regression model. We model hazard ratios.</p>
-<p>With Basketball-Reference, there are basically infinite combinations of models we could consider. One method of to develop this model could be to put all the possible factors that influence time until retirement, and use a lasso regression to determine which variables are best. However, there are problems with consistency with lasso regressions, see <a href="https://stats.stackexchange.com/questions/348320/consistency-of-lasso">here</a>:</p>
+<p>With Basketball-Reference, there are basically infinite combinations of models we could consider. One method to develop this model could be to put all the possible factors that influence time until retirement, and use a lasso regression to determine which variables are best. However, there are problems with consistency with lasso regressions, see <a href="https://stats.stackexchange.com/questions/348320/consistency-of-lasso">here</a>:</p>
 <p>Finally, we could use institutional knowledge. Institutional knowledge of how the Data Generated Process works allows us to use knowledge in an area to model a process. In this case, we understand that players who are better, get longer contracts, and can usually play longer as their skills atrophy.</p>
 </div>
 <div id="data" class="section level2">
 <h2>Data</h2>
 <p>To model minutes, we will do so based on the players first season. We are not interested in how a given player performs in their fifth year, but rather, based on the first season in the NBA, what is the players expected career length as defined by minutes played. Minutes played is a good benchmark for both contracts, but also accounts for skill atrophy within a contract.</p>
 <p>The variables of interest will be player statistics after their first year. We will consider both traditional statistics like points, assists, and rebounds, and more modern statistics like expected field goal percentage. A previous post showed how to pull draft position. We will also use draft position. Finally, we will test whether the first team a player plays on influences the length of their career.</p>
-<p>After pulling each of the players season, we standardize all numeric variables. Andrew Gelman has a post about this [here] (<a href="https://statmodeling.stat.columbia.edu/2009/07/11/when_to_standar/" class="uri">https://statmodeling.stat.columbia.edu/2009/07/11/when_to_standar/</a>). In short, when comparing predictors within models, it is very useful to standardize the predictor variables as it allows us to look to see which predictors are the most predictive. To standardize variables in <code>R</code>, we use the function <code>scale</code>.</p>
+<p>After pulling each of the players season, we standardize all numeric variables. Andrew Gelman has a post about this <a href="https://statmodeling.stat.columbia.edu/2009/07/11/when_to_standar/">here</a>. In short, when comparing predictors within models, it is very useful to standardize the predictor variables as it allows us to look to see which predictors are the most predictive. To standardize variables in <code>R</code>, we use the function <code>scale</code>.</p>
 </div>
 <div id="lasso-method" class="section level2">
 <h2>Lasso method:</h2>
@@ -46,7 +47,7 @@ tags: []
   labs(x = expression(&quot;Log&quot;~(lambda)) ,
                      y = &quot;Partial Likelihood Deviance&quot;) </code></pre>
 <p><img src="/post/2020-06-30-fourth-post_files/figure-html/ggplotV-1.png" width="672" /></p>
-<p>The minimum value of lambda is 0.0501807.</p>
+<p>The minimum value of lambda is 0.0457228.</p>
 </div>
 <div id="using-institutional-knowledge" class="section level2">
 <h2>Using Institutional Knowledge</h2>
@@ -67,7 +68,7 @@ tags: []
 </div>
 <div id="proportional-hazard-assumption" class="section level2">
 <h2>Proportional Hazard Assumption</h2>
-<p>A key assumption in a Cox Proportional Hazard model is that that the proportional. This assumption simply states that the ratio of hazards must be constant over time. To check whether this assumption hols, we do two things:</p>
+<p>A key assumption in a Cox Proportional Hazard model is that that the proportional. This assumption simply states that the ratio of hazards must be constant over time. To check whether this assumption holds, we do two things:</p>
 <ol style="list-style-type: decimal">
 <li>Check whether the interaction between time (minutes in our case) and the predictors are statistically significant.</li>
 </ol>
@@ -77,7 +78,7 @@ tags: []
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
 }
 
-#rnsraimehh .gt_table {
+#nwakpbvhci .gt_table {
   display: table;
   border-collapse: collapse;
   margin-left: auto;
@@ -100,7 +101,7 @@ tags: []
   border-left-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_heading {
+#nwakpbvhci .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -112,7 +113,7 @@ tags: []
   border-right-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_title {
+#nwakpbvhci .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -122,7 +123,7 @@ tags: []
   border-bottom-width: 0;
 }
 
-#rnsraimehh .gt_subtitle {
+#nwakpbvhci .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -132,13 +133,13 @@ tags: []
   border-top-width: 0;
 }
 
-#rnsraimehh .gt_bottom_border {
+#nwakpbvhci .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_col_headings {
+#nwakpbvhci .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -153,7 +154,7 @@ tags: []
   border-right-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_col_heading {
+#nwakpbvhci .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -173,7 +174,7 @@ tags: []
   overflow-x: hidden;
 }
 
-#rnsraimehh .gt_column_spanner_outer {
+#nwakpbvhci .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -185,15 +186,15 @@ tags: []
   padding-right: 4px;
 }
 
-#rnsraimehh .gt_column_spanner_outer:first-child {
+#nwakpbvhci .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#rnsraimehh .gt_column_spanner_outer:last-child {
+#nwakpbvhci .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#rnsraimehh .gt_column_spanner {
+#nwakpbvhci .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -205,7 +206,7 @@ tags: []
   width: 100%;
 }
 
-#rnsraimehh .gt_group_heading {
+#nwakpbvhci .gt_group_heading {
   padding: 8px;
   color: #333333;
   background-color: #FFFFFF;
@@ -227,7 +228,7 @@ tags: []
   vertical-align: middle;
 }
 
-#rnsraimehh .gt_empty_group_heading {
+#nwakpbvhci .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -242,19 +243,19 @@ tags: []
   vertical-align: middle;
 }
 
-#rnsraimehh .gt_striped {
+#nwakpbvhci .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#rnsraimehh .gt_from_md > :first-child {
+#nwakpbvhci .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#rnsraimehh .gt_from_md > :last-child {
+#nwakpbvhci .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#rnsraimehh .gt_row {
+#nwakpbvhci .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -273,7 +274,7 @@ tags: []
   overflow-x: hidden;
 }
 
-#rnsraimehh .gt_stub {
+#nwakpbvhci .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -285,7 +286,7 @@ tags: []
   padding-left: 12px;
 }
 
-#rnsraimehh .gt_summary_row {
+#nwakpbvhci .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -295,7 +296,7 @@ tags: []
   padding-right: 5px;
 }
 
-#rnsraimehh .gt_first_summary_row {
+#nwakpbvhci .gt_first_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -305,7 +306,7 @@ tags: []
   border-top-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_grand_summary_row {
+#nwakpbvhci .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -315,7 +316,7 @@ tags: []
   padding-right: 5px;
 }
 
-#rnsraimehh .gt_first_grand_summary_row {
+#nwakpbvhci .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -325,7 +326,7 @@ tags: []
   border-top-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_table_body {
+#nwakpbvhci .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -334,7 +335,7 @@ tags: []
   border-bottom-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_footnotes {
+#nwakpbvhci .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -348,13 +349,13 @@ tags: []
   border-right-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_footnote {
+#nwakpbvhci .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding: 4px;
 }
 
-#rnsraimehh .gt_sourcenotes {
+#nwakpbvhci .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -368,46 +369,46 @@ tags: []
   border-right-color: #D3D3D3;
 }
 
-#rnsraimehh .gt_sourcenote {
+#nwakpbvhci .gt_sourcenote {
   font-size: 90%;
   padding: 4px;
 }
 
-#rnsraimehh .gt_left {
+#nwakpbvhci .gt_left {
   text-align: left;
 }
 
-#rnsraimehh .gt_center {
+#nwakpbvhci .gt_center {
   text-align: center;
 }
 
-#rnsraimehh .gt_right {
+#nwakpbvhci .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#rnsraimehh .gt_font_normal {
+#nwakpbvhci .gt_font_normal {
   font-weight: normal;
 }
 
-#rnsraimehh .gt_font_bold {
+#nwakpbvhci .gt_font_bold {
   font-weight: bold;
 }
 
-#rnsraimehh .gt_font_italic {
+#nwakpbvhci .gt_font_italic {
   font-style: italic;
 }
 
-#rnsraimehh .gt_super {
+#nwakpbvhci .gt_super {
   font-size: 65%;
 }
 
-#rnsraimehh .gt_footnote_marks {
+#nwakpbvhci .gt_footnote_marks {
   font-style: italic;
   font-size: 65%;
 }
 </style>
-<div id="rnsraimehh" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+<div id="nwakpbvhci" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
   <thead class="gt_header">
     <tr>
       <th colspan="3" class="gt_heading gt_title gt_font_normal" style>Proportional Hazard Table</th>
@@ -437,7 +438,7 @@ tags: []
     <tr>
       <td class="gt_row gt_left">mp:FirstSeasonMP</td>
       <td class="gt_row gt_left">-</td>
-      <td class="gt_row gt_left">2e-05 (0.00055945)</td>
+      <td class="gt_row gt_left">2e-05 (0.00011898)</td>
     </tr>
     <tr>
       <td class="gt_row gt_left">mp:ft</td>
@@ -447,12 +448,12 @@ tags: []
     <tr>
       <td class="gt_row gt_left">mp:fta</td>
       <td class="gt_row gt_left">3e-05 (&lt; 2.22e-16)</td>
-      <td class="gt_row gt_left">-</td>
+      <td class="gt_row gt_left">1e-05 (0.03879601)</td>
     </tr>
     <tr>
       <td class="gt_row gt_left">mp:trb</td>
       <td class="gt_row gt_left">-</td>
-      <td class="gt_row gt_left">-2e-05 (3.3294e-05)</td>
+      <td class="gt_row gt_left">-2e-05 (4.7254e-05)</td>
     </tr>
   </tbody>
   
@@ -464,6 +465,7 @@ tags: []
 <p><img src="/post/2020-06-30-fourth-post_files/figure-html/SchoenfeldPlts-1.png" width="672" /></p>
 <p>The above plot shows the Schoenfeld residuals against time for the Lasso model, and below is the plot shows the Schoenfeld residuals against time for the Institutional model.</p>
 <p><img src="/post/2020-06-30-fourth-post_files/figure-html/PltInstProHZ-1.png" width="672" /></p>
+<p>To resolve the violation of proportional hazards, we include an interaction between the variable which violates the proportional hazard assumption and the time variable, <code>mp</code> in our models.</p>
 </div>
 <div id="picking-a-model" class="section level2">
 <h2>Picking a model:</h2>
@@ -484,4 +486,8 @@ tags: []
 <h2>Limitations:</h2>
 <p>This is obviously a short blog post on this topic. There is no information on contracts, player earnings, injuries, all of which are much clearer determinants of minutes played in a career than any of the predictors used.</p>
 <p>Furthermore, this is not a predictive model. This model is a descriptive model which attempts to understand what factors best explain why players who played during the era of 2003 to 2010 played as many minutes as they did over the course of their career.</p>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>This post attempts to understand NBA player longevity through Cox models, and comparing two methods of model selection. The first model selection method uses Lasso regression, a form of supervised learning, to find the best model. The second model uses institutional knowledge to select the model.</p>
 </div>

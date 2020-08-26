@@ -291,7 +291,7 @@ All of the models can be found [here](https://github.com/kieran11/WeatherCovid/t
 ```{r MainParams}
 
 
-CheckMainParams = dget("Data/PosteriorDistr") %>%
+CheckMainParams = dget("WeatherData/PosteriorDistr") %>%
   filter(Model == "CovidBayesianStdCensus") %>% 
   select(b_lag_temperatureMax_06, b_lag_temp_sqr,  `b_lag_temperatureMax_06:lag_precipIntensity_06`,
          b_lag_precipIntensity_06 ) %>% 

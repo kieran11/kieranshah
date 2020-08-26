@@ -6,10 +6,21 @@
     <description>Recent content in R on Kieran Shah&#39;s Data Science Examples</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 06 Aug 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 26 Aug 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/categories/r/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Covid Mapping</title>
+      <link>/2020/08/26/covid-mapping/</link>
+      <pubDate>Wed, 26 Aug 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/2020/08/26/covid-mapping/</guid>
+      <description>City of Toronto Covid Mapping ProjectThe purpose of this post it to use the Open Data Toronto portal to use their Covid-19 data, and to first map the data, and second, bring in Census 2016 data to show correlations between income, and other demographic variables and Covid-19 positive cases.
+The full code can be found here.
+Get the data:Anyone can download the data here.</description>
+    </item>
     
     <item>
       <title>Prediction with Python</title>
@@ -17,9 +28,9 @@
       <pubDate>Thu, 06 Aug 2020 00:00:00 +0000</pubDate>
       
       <guid>/2020/08/06/prediction-with-python/</guid>
-      <description>Using Python and Reticulate: Reticulate is a R package that allows us to implement python within an R markdown file. This post shows how to do some basic predictive analysis using the same NBA dataset we used in prior posts.
+      <description>Using Python and Reticulate:Reticulate is a R package that allows us to implement python within an R markdown file. This post shows how to do some basic predictive analysis using the same NBA dataset we used in prior posts.
 We first need to read in the data. Below is some basic code to bring in a csv file.
- import pandas as pd import numpy as np AnalyticalDS = pd.</description>
+import pandas as pdimport numpy as npAnalyticalDS = pd.</description>
     </item>
     
     <item>
@@ -28,33 +39,21 @@ We first need to read in the data. Below is some basic code to bring in a csv fi
       <pubDate>Fri, 31 Jul 2020 00:00:00 +0000</pubDate>
       
       <guid>/2020/07/31/new-cases-analysis/</guid>
-      <description>Analysis: The purpose of this analysis is to evaluate the impact of our three weather metrics on new Covid-19 cases in California. The complete and large dataset can be found here.
+      <description>Analysis:The purpose of this analysis is to evaluate the impact of our three weather metrics on new Covid-19 cases in California. The complete and large dataset can be found here.
 The complete code for this post can be found here:.
 The basic California model will hypothesize that the stages of each opening should increase new cases after a week. Similarly, weather should work in a similar pattern. Better weather should encourage more outdoor activity, and we should see a drop in cases up until a certain point.</description>
     </item>
     
     <item>
       <title>Getting Weather and Covid Data</title>
-      <link>/2020/07/27/getting-weather-and-covid-data/</link>
-      <pubDate>Mon, 27 Jul 2020 00:00:00 +0000</pubDate>
+      <link>/2020/07/28/getting-weather-and-covid-data/</link>
+      <pubDate>Tue, 28 Jul 2020 00:00:00 +0000</pubDate>
       
-      <guid>/2020/07/27/getting-weather-and-covid-data/</guid>
-      <description>Weather Data Many epidemiological experts have linked weather to rising or falling Covid-19 cases. The first two steps of the process of getting data is as follows:
+      <guid>/2020/07/28/getting-weather-and-covid-data/</guid>
+      <description>Weather DataMany epidemiological experts have linked weather to rising or falling Covid-19 cases. The first two steps of the process of getting data is as follows:
 The Covid-19 cases by county in the United States (US) can be found here:.
- The weather data comes from Darksky. We use the package darksky. darksky is a wrapper for the API DarkSky provides.
-  The package darksky and its documentation is here:.</description>
-    </item>
-    
-    <item>
-      <title>Survival Analysis</title>
-      <link>/2020/07/27/survival-analysis/</link>
-      <pubDate>Mon, 27 Jul 2020 00:00:00 +0000</pubDate>
-      
-      <guid>/2020/07/27/survival-analysis/</guid>
-      <description>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.
-The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.
-As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.
-Next, we look at the seasons played:</description>
+The weather data comes from Darksky. We use the package darksky. darksky is a wrapper for the API DarkSky provides.
+The package darksky and its documentation is here:.</description>
     </item>
     
     <item>
@@ -63,10 +62,23 @@ Next, we look at the seasons played:</description>
       <pubDate>Sun, 26 Jul 2020 00:00:00 +0000</pubDate>
       
       <guid>/2020/07/26/get-nba-draft-data/</guid>
-      <description>Getting draft data An interesting aspect of evaluating average player length is looking at their original draft position. The below code uses Basketball Reference and rvest to pull the drafts from 1985 to 2010.
+      <description>Getting draft dataAn interesting aspect of evaluating average player length is looking at their original draft position. The below code uses Basketball Reference and rvest to pull the drafts from 1985 to 2010.
 This post uses the two packages rvest and the tidyverse package.
 The code below looks through the NBA draft pages on Basketball Reference. It pulls the html tag table.
 When the code reads in the data, the first few variables do not have assigned variable names.</description>
+    </item>
+    
+    <item>
+      <title>Survival Analysis</title>
+      <link>/2020/07/26/survival-analysis/</link>
+      <pubDate>Sun, 26 Jul 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/2020/07/26/survival-analysis/</guid>
+      <description>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.
+The code can be found here.
+The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.
+As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.
+Next, we look at the seasons played:</description>
     </item>
     
     <item>
@@ -75,10 +87,9 @@ When the code reads in the data, the first few variables do not have assigned va
       <pubDate>Tue, 30 Jun 2020 00:00:00 +0000</pubDate>
       
       <guid>/2020/06/30/nba-average-career-length/</guid>
-      <description>Ballr The ballr package provides easy to use function to access the vast data resources on basketball-reference.com.
-To get historical data for a defined group of players, we first pick a few given seasons. For our example, we pick the 2003 to the 2010 seasons.
-The complete code to reproduce this post can be found here
-Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min(season = .x) ) %&amp;gt;% bind_rows(.</description>
+      <description>The purpose of this post is to show how to use the ballr package to get historical NBA data, and after getting the data, find the best metric to use to determine longevity.
+BallrThe ballr package provides easy to use function to access the vast data resources on basketball-reference.com.
+To get historical data for a defined group of players, we first pick a few given seasons. For our example, we pick the 2003 to the 2010 seasons.</description>
     </item>
     
     <item>
@@ -88,7 +99,7 @@ Per36 = purrr::map( as.list(seq(2003, 2010, 1)) , ~ NBAPerGameStatisticsPer36Min
       
       <guid>/2020/06/07/student-forecast-model/</guid>
       <description>This post attempts to provide an example using simulated data of how to forecast student enrollment at a four-year college or university. It uses Markov chains with simulated data. The complete code to reproduce this post can be found here
-Describe a model: In most North Americana four-year universities, students progress through the four-year curriculum, and then graduate after four years. However, some students leave after the first year, other after their third year.</description>
+Describe a model:In most North Americana four-year universities, students progress through the four-year curriculum, and then graduate after four years. However, some students leave after the first year, other after their third year.</description>
     </item>
     
   </channel>

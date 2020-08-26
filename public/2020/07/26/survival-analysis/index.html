@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.72.0" />
+
+
+<title>Survival Analysis - Kieran Shah&#39;s Data Science Examples</title>
+<meta property="og:title" content="Survival Analysis - Kieran Shah&#39;s Data Science Examples">
+
+
+  <link href='/favicon.ico' rel='icon' type='image/x-icon'/>
+
+
+
+  
+
+
+
+
+
+
+
+
+<link href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css' rel='stylesheet' type='text/css' />
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/about/">About</a></li>
+    
+    <li><a href="https://github.com/kieran11">GitHub</a></li>
+    
+    <li><a href="https://www.linkedin.com/in/kieran-shah11">LinkedIn</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">9 min read</span>
+    
+
+    <h1 class="article-title">Survival Analysis</h1>
+
+    
+    <span class="article-date">2020-07-26</span>
+    
+
+    <div class="article-content">
+      
+
+
+<p>The two previous posts have described the data available. This post will look to survival analysis to assess time until the end of a NBA career.</p>
+<p>The code can be found <a href="https://github.com/kieran11/averageagenba/blob/master/SurvivalAnalysis.Rmd">here</a>.</p>
+<p>The first plot looks at the Kaplan Meier curves for both minutes played and seasons played by position.</p>
+<p>As we can see, there is not a considerable difference between positions for the minutes played Kaplan-Meier curve.</p>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/CurvesMP-1.png" width="672" /></p>
+<p>Next, we look at the seasons played:</p>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/SeasonsPlayedKM-1.png" width="672" /></p>
+<p>The green and blue curves are higher than the other three curves. This suggests that players classified as small forward, and point guard have longer careers.</p>
+<p>While both metrics are interesting, minutes played better describes a players career arc. The following analysis will look at minutes played.</p>
+<div id="cox-proportional-hazard" class="section level2">
+<h2>Cox Proportional Hazard:</h2>
+<p>The next step is to develop a regression model. We model hazard ratios.</p>
+<p>With Basketball-Reference, there are basically infinite combinations of models we could consider. One method to develop this model could be to put all the possible factors that influence time until retirement, and use a lasso regression to determine which variables are best. However, there are problems with consistency with lasso regressions, see <a href="https://stats.stackexchange.com/questions/348320/consistency-of-lasso">here</a>:</p>
+<p>Finally, we could use institutional knowledge. Institutional knowledge of how the Data Generated Process works allows us to use knowledge in an area to model a process. In this case, we understand that players who are better, get longer contracts, and can usually play longer as their skills atrophy.</p>
+</div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>To model minutes, we will do so based on the players first season. We are not interested in how a given player performs in their fifth year, but rather, based on the first season in the NBA, what is the players expected career length as defined by minutes played. Minutes played is a good benchmark for both contracts, but also accounts for skill atrophy within a contract.</p>
+<p>The variables of interest will be player statistics after their first year. We will consider both traditional statistics like points, assists, and rebounds, and more modern statistics like expected field goal percentage. A previous post showed how to pull draft position. We will also use draft position. Finally, we will test whether the first team a player plays on influences the length of their career.</p>
+<p>After pulling each of the players season, we standardize all numeric variables. Andrew Gelman has a post about this <a href="https://statmodeling.stat.columbia.edu/2009/07/11/when_to_standar/">here</a>. In short, when comparing predictors within models, it is very useful to standardize the predictor variables as it allows us to look to see which predictors are the most predictive. To standardize variables in <code>R</code>, we use the function <code>scale</code>.</p>
+</div>
+<div id="lasso-method" class="section level2">
+<h2>Lasso method:</h2>
+<p>To run the <code>glmnet</code> function, we need to create a matrix. We need the categorical variables to be dummies.</p>
+<p>The plot below shows the lambda on the x-axis, and the partial likelihood deviance on the y axis. The goal is to minimize the partial likelihood deviance.</p>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/lamdaPlt-1.png" width="672" /></p>
+<p>As an exercise, the below code shows how to reproduce the above plot with <code>ggplot</code>.</p>
+<pre class="r"><code>tibble(Likelihood = LassoReg$cvup,
+       Lambda= LassoReg$lambda ) %&gt;% 
+  mutate(LogLambda = round( log(Lambda) , digits = 0)) %&gt;% 
+  ggplot(., aes(x = LogLambda, y = Likelihood)) +
+  geom_smooth() +
+  theme_classic() +
+  geom_vline(xintercept =  log(LassoReg$lambda.min)) +
+  labs(x = expression(&quot;Log&quot;~(lambda)) ,
+                     y = &quot;Partial Likelihood Deviance&quot;) </code></pre>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/ggplotV-1.png" width="672" /></p>
+<p>The minimum value of lambda is 0.0457228.</p>
+</div>
+<div id="using-institutional-knowledge" class="section level2">
+<h2>Using Institutional Knowledge</h2>
+<p>Institutional knowledge models use expertise and literature to develop a model. In this case, we will use expertise from NBA experts to develop a model.</p>
+<p>The model will use the following predictors:</p>
+<ol style="list-style-type: decimal">
+<li>Age - the younger a player, the longer they have to develop, and the longer their peak performance may be.<br />
+</li>
+<li>Five year average of win-loss rate of first team. The theory is that better teams are more sound decision makers.</li>
+<li>Free throw percentages: a free throw percentage is a very good predictor for young players, as it shows their innate shooting skills.</li>
+<li>Free throw attempts: players who are able to get free throws can generate efficient offense.</li>
+<li>Effective Field Goal Percent: This just shows how efficient a basketball player is.</li>
+<li>Draft position – the higher a draft position, the better a given player is perceived to be by experts.</li>
+<li>Blocks and steals are very crude metric of defensive ability. f</li>
+<li>Points - simply because players with more points may be able to play longer because of reputation.</li>
+</ol>
+<p>The team was excluded from this analysis. Team management changes over time, and the 5-year moving average of their win percentage is a better reflection of the organization of the team, then just the dummy variable of team.</p>
+</div>
+<div id="proportional-hazard-assumption" class="section level2">
+<h2>Proportional Hazard Assumption</h2>
+<p>A key assumption in a Cox Proportional Hazard model is that that the proportional. This assumption simply states that the ratio of hazards must be constant over time. To check whether this assumption holds, we do two things:</p>
+<ol style="list-style-type: decimal">
+<li>Check whether the interaction between time (minutes in our case) and the predictors are statistically significant.</li>
+</ol>
+<p>For the Lasso model, there are two predictors which do not meet the proportional hazard assumption:</p>
+<p>For the institutional model, there are three predictors which do not meet the proportional hazard assumptions.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#nwakpbvhci .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#nwakpbvhci .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#nwakpbvhci .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#nwakpbvhci .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#nwakpbvhci .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#nwakpbvhci .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#nwakpbvhci .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#nwakpbvhci .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#nwakpbvhci .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#nwakpbvhci .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#nwakpbvhci .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#nwakpbvhci .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#nwakpbvhci .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#nwakpbvhci .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#nwakpbvhci .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#nwakpbvhci .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#nwakpbvhci .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#nwakpbvhci .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#nwakpbvhci .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#nwakpbvhci .gt_left {
+  text-align: left;
+}
+
+#nwakpbvhci .gt_center {
+  text-align: center;
+}
+
+#nwakpbvhci .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#nwakpbvhci .gt_font_normal {
+  font-weight: normal;
+}
+
+#nwakpbvhci .gt_font_bold {
+  font-weight: bold;
+}
+
+#nwakpbvhci .gt_font_italic {
+  font-style: italic;
+}
+
+#nwakpbvhci .gt_super {
+  font-size: 65%;
+}
+
+#nwakpbvhci .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="nwakpbvhci" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  <thead class="gt_header">
+    <tr>
+      <th colspan="3" class="gt_heading gt_title gt_font_normal" style>Proportional Hazard Table</th>
+    </tr>
+    <tr>
+      <th colspan="3" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_center gt_columns_bottom_border" rowspan="2" colspan="1">term</th>
+      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="2">
+        <span class="gt_column_spanner">Model</span>
+      </th>
+    </tr>
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Institutional</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Lasso</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">mp:blk</td>
+      <td class="gt_row gt_left">-1e-05 (0.01808871)</td>
+      <td class="gt_row gt_left">-</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">mp:FirstSeasonMP</td>
+      <td class="gt_row gt_left">-</td>
+      <td class="gt_row gt_left">2e-05 (0.00011898)</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">mp:ft</td>
+      <td class="gt_row gt_left">-3e-05 (&lt; 2.22e-16)</td>
+      <td class="gt_row gt_left">-</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">mp:fta</td>
+      <td class="gt_row gt_left">3e-05 (&lt; 2.22e-16)</td>
+      <td class="gt_row gt_left">1e-05 (0.03879601)</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">mp:trb</td>
+      <td class="gt_row gt_left">-</td>
+      <td class="gt_row gt_left">-2e-05 (4.7254e-05)</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<ol start="2" style="list-style-type: decimal">
+<li>Show the model’s Schoenfeld residuals plotted against time, or in this case, minutes played.</li>
+</ol>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/SchoenfeldPlts-1.png" width="672" /></p>
+<p>The above plot shows the Schoenfeld residuals against time for the Lasso model, and below is the plot shows the Schoenfeld residuals against time for the Institutional model.</p>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/PltInstProHZ-1.png" width="672" /></p>
+<p>To resolve the violation of proportional hazards, we include an interaction between the variable which violates the proportional hazard assumption and the time variable, <code>mp</code> in our models.</p>
+</div>
+<div id="picking-a-model" class="section level2">
+<h2>Picking a model:</h2>
+<p>Survival models do not have provide a prediction the same way a logistic model. Comparing models based on prediction accuracy is not as viable.</p>
+<p>There is no perfect model to evaluate survival models. To evaluate the two models, we will follow this <a href="https://stats.stackexchange.com/questions/254873/comparing-cox-proportional-hazards-models-aic">post</a>. We will take 100 bootstraps, and calculate the AIC for each of the models. We then compare the median AIC for both models based on the 100 bootstraps.</p>
+<p>Below is the plot of the 100 bootstraps. As we can see, the institutional model has a lower mean AIC value. Based on this limited exercise, this shows the value even limited knowledge of a field can have in model selection.</p>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/EvalPlot-1.png" width="672" /></p>
+</div>
+<div id="final-model" class="section level2">
+<h2>Final Model</h2>
+<p>The hazard ratios, and their confidence intervals an be found below:</p>
+<p><img src="/post/2020-06-30-fourth-post_files/figure-html/HRPlt-1.png" width="672" /></p>
+<p>There are only two terms where the 95% confidence intervals do not include one.</p>
+<p>First, an increase of one standard deviations of free throws is associated with a 24% increase in minutes played after adjusting for the other predictors.</p>
+<p>Second, an increase of on standard deviations of free throw attempts is associated with a 26% decrease in minutes played after adjusting for other predictors.</p>
+</div>
+<div id="limitations" class="section level2">
+<h2>Limitations:</h2>
+<p>This is obviously a short blog post on this topic. There is no information on contracts, player earnings, injuries, all of which are much clearer determinants of minutes played in a career than any of the predictors used.</p>
+<p>Furthermore, this is not a predictive model. This model is a descriptive model which attempts to understand what factors best explain why players who played during the era of 2003 to 2010 played as many minutes as they did over the course of their career.</p>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>This post attempts to understand NBA player longevity through Cox models, and comparing two methods of model selection. The first model selection method uses Lasso regression, a form of supervised learning, to find the best model. The second model uses institutional knowledge to select the model.</p>
+</div>
+
+    </div>
+  </article>
+
+  
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          <li>
+            <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+          </li>
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" alt="Img link to Hugo website" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+    
+  </body>
+</html>
+
