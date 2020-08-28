@@ -20,6 +20,8 @@ Dissemination Areas (DA) are the smallest unit Statistics Canada reports. They u
 
 This post first downloads the FSA [shapefile](https://www12.statcan.gc.ca/census-recensement/alternative_alternatif.cfm?l=eng&dispext=zip&teng=lfsa000b16a_e.zip&k=%20%20%20%2044221&loc=http://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/files-fichiers/2016/lfsa000b16a_e.zip) from Statistics Canada. It then uses the `cancensus` package to extract median income, and other demographic data at the DA level. 
 
+The full code can be found [here](https://github.com/kieran11/CovidIncome/blob/master/FSA_to_DA.Rmd).
+
 ```{r pckgs}
 
 ### Read in shape file
