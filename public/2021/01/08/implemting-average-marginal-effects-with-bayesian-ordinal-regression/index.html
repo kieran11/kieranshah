@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.72.0" />
+
+
+<title>Implemting Average Marginal Effects with Bayesian Ordinal Regression - Kieran Shah&#39;s Data Science Examples</title>
+<meta property="og:title" content="Implemting Average Marginal Effects with Bayesian Ordinal Regression - Kieran Shah&#39;s Data Science Examples">
+
+
+  <link href='/favicon.ico' rel='icon' type='image/x-icon'/>
+
+
+
+  
+
+
+
+
+
+
+
+
+<link href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css' rel='stylesheet' type='text/css' />
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/about/">About</a></li>
+    
+    <li><a href="https://github.com/kieran11">GitHub</a></li>
+    
+    <li><a href="https://www.linkedin.com/in/kieran-shah11">LinkedIn</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">14 min read</span>
+    
+
+    <h1 class="article-title">Implemting Average Marginal Effects with Bayesian Ordinal Regression</h1>
+
+    
+    <span class="article-date">2021-01-08</span>
+    
+
+    <div class="article-content">
+      
+
+
+<p>The <code>R</code> package <code>margins</code> provides average marginal effects for any model developed with <code>lm</code> or <code>glm</code>, among many others. However, <code>margins</code> does not work with <code>brms</code>. Jack O’Bailey developed two functions for <code>brms</code> <a href="https://gist.github.com/jackobailey/0982c89326c36b12d6fa6d6f182189be">here</a>. There are two functions in this text file. The first function gets the average marginal effects for continuous independent variables. The second function get the average marginal effects for categorical variables. The link compares the results of the two functions with the <code>margins</code> command from the package <code>margins</code>. If you run the example, you can see that the results are remarkably similar.</p>
+<p>Using the code above, this post attempts to recreate the functionality of the <code>margins</code> command from the <code>margins</code> package with ordinal logistic regression models.</p>
+<p>The adapted function is below:</p>
+<pre class="r"><code>bayes_dydx_ordinal.factor &lt;- function(model, data = NULL, variable, re_formula = NULL){
+  
+  # Get data from model where data = NULL
+  if(is.null(data) == T){
+    d &lt;- model$data
+  } else {
+    d &lt;- data
+  }
+
+  
+  # Get outcome from model
+  resp &lt;- model$formula$resp
+  resp_ord &lt;- model$formula$resp
+  # Omit outcome from data
+  d &lt;-
+    d %&gt;%
+    dplyr::select(-resp)
+  
+  d &lt;-
+    d %&gt;% 
+    group_by_all() %&gt;% 
+    count(name = &quot;w&quot;) %&gt;% 
+    ungroup()
+  
+
+  # Get factor levels
+  levs &lt;- levels(as.factor(d[[variable]]))
+  base &lt;- levs[1L]
+  cont &lt;- levs[-1L]
+  
+  
+  # Create empty list for fitted draws
+  f &lt;- list()
+  
+  # For each list add fitted draws
+  for (i in seq_along(levs)){
+    
+    # Fix variable in each list to factor level
+    d[[variable]] &lt;- levs[i]
+    
+    f[[i]] &lt;- 
+      d %&gt;% 
+      add_fitted_draws(model = model,
+                       re_formula = NULL,
+                       value = &quot;eff&quot;) %&gt;% 
+      ##### Need to include ordered within response variable
+      group_by_at(vars(&quot;.draw&quot;, &quot;.category&quot;)) %&gt;% 
+      #group_by_at(vars(&quot;.draw&quot;)) %&gt;% 
+      summarise(
+        # eff = sum(eff),
+        # w = sum(w),
+        # eff_w_a = sum(eff*w),
+        eff_w = sum(eff * w)/sum(w)) %&gt;% 
+      #dplyr::select(eff_w) %&gt;% 
+      #dplyr::select(eff_w, w, eff, eff_w_a) %&gt;% 
+      ungroup() %&gt;% 
+      select(-.draw)
+    
+    # Compute contrast if not base level
+    if (i &gt; 1){
+      f[[i]]$eff_w &lt;- f[[i]]$eff_w - f[[1]][[2]] #### Change here because also included the order of response
+    }
+    
+    # # Rename column
+    names(f[[i]]) &lt;- c(paste0(&quot;Category&quot;, levs[i]), levs[i])
+    #names(f[[i]]) &lt;- levs[i]
+    
+  }
+
+  # Remove data frame
+  d &lt;- NULL
+  
+  # Create output object
+  out &lt;- do.call(cbind, f)
+
+  # Return AMEs
+  if (length(cont) == 1){
+    
+    out &lt;- out %&gt;% tibble() %&gt;% select(1,cont)
+    names(out)[2] &lt;- &quot;est&quot;
+    
+    out %&gt;% 
+      mutate(
+        var = variable,
+        resp = cont
+      ) %&gt;% 
+      dplyr::select(Category=1,var, resp, est)
+    
+  } else {
+    
+    out %&gt;% 
+      select(1, cont) %&gt;% 
+      tidyr::pivot_longer(cols = -1 ,
+                          names_to = &quot;variable&quot;, values_to = &quot;value&quot;) %&gt;%
+      rename(resp = variable, est = value,
+             Category = 1)
+    
+    
+  }
+  
+} ### Close Function</code></pre>
+<p>The example uses the <code>nhanes2</code> dataset, which is from the <code>webuse</code> package.</p>
+<p>We next run the ordinal Bayesian model using <code>brms</code>. The code is below:</p>
+<pre class="r"><code># Fit Bayesian model
+bayes_ordinal &lt;- brm(formula = health ~ female + black + age,
+             family=cumulative(&quot;logit&quot;),
+             prior = c(prior(normal( 0, 1), class = b)),
+             data = nhanes2_a,
+            warmup = 1000, 
+            iter = 2000, 
+             chains = 2,
+             cores = 2)
+
+AMEByVar = function(x,y) {
+  
+ ParedEst = bayes_dydx_ordinal.factor(bayes_ordinal , nhanes2_a, variable = x ) %&gt;% 
+    group_by(Category, resp) %&gt;% 
+    summarise(p50 = median(est)) %&gt;% 
+    ungroup() %&gt;% 
+    mutate(Var = x)
+
+}
+ 
+BayesAME = purrr::map(as.list(c(&quot;black&quot;, &quot;female&quot;)), AMEByVar) %&gt;% 
+  bind_rows(.)</code></pre>
+<p>As a first step, we can compare the log odds ratios between the Bayesian model with normally distributed priors and the previous model with flat priors:</p>
+<p>As we can see, the coefficients are of similar value.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#gcqholgmla .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#gcqholgmla .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#gcqholgmla .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#gcqholgmla .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#gcqholgmla .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#gcqholgmla .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#gcqholgmla .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#gcqholgmla .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#gcqholgmla .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#gcqholgmla .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#gcqholgmla .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#gcqholgmla .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#gcqholgmla .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#gcqholgmla .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#gcqholgmla .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#gcqholgmla .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#gcqholgmla .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#gcqholgmla .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#gcqholgmla .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#gcqholgmla .gt_left {
+  text-align: left;
+}
+
+#gcqholgmla .gt_center {
+  text-align: center;
+}
+
+#gcqholgmla .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#gcqholgmla .gt_font_normal {
+  font-weight: normal;
+}
+
+#gcqholgmla .gt_font_bold {
+  font-weight: bold;
+}
+
+#gcqholgmla .gt_font_italic {
+  font-style: italic;
+}
+
+#gcqholgmla .gt_super {
+  font-size: 65%;
+}
+
+#gcqholgmla .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="gcqholgmla" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  <thead class="gt_header">
+    <tr>
+      <th colspan="7" class="gt_heading gt_title gt_font_normal" style>Coefficient Comparison</th>
+    </tr>
+    <tr>
+      <th colspan="7" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_center gt_columns_bottom_border" rowspan="2" colspan="1">term</th>
+      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="3">
+        <span class="gt_column_spanner">Bayesian Model Estimates</span>
+      </th>
+      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="3">
+        <span class="gt_column_spanner">Flat Prior Model Estimates</span>
+      </th>
+    </tr>
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Estimate</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Q2.5</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Q97.5</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">estimate</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">conf.low</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">conf.high</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">female1</td>
+      <td class="gt_row gt_right">-0.117</td>
+      <td class="gt_row gt_right">-0.191</td>
+      <td class="gt_row gt_right">-0.046</td>
+      <td class="gt_row gt_right">-0.117</td>
+      <td class="gt_row gt_right">-0.187</td>
+      <td class="gt_row gt_right">-0.047</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">black1</td>
+      <td class="gt_row gt_right">-0.880</td>
+      <td class="gt_row gt_right">-0.995</td>
+      <td class="gt_row gt_right">-0.763</td>
+      <td class="gt_row gt_right">-0.884</td>
+      <td class="gt_row gt_right">-0.999</td>
+      <td class="gt_row gt_right">-0.770</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">age</td>
+      <td class="gt_row gt_right">-0.041</td>
+      <td class="gt_row gt_right">-0.043</td>
+      <td class="gt_row gt_right">-0.039</td>
+      <td class="gt_row gt_right">-0.041</td>
+      <td class="gt_row gt_right">-0.043</td>
+      <td class="gt_row gt_right">-0.039</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>We next use the adapted function <code>bayes_dydx_ordinal.factor</code> to compare the marginal effects.</p>
+<p>Below we compare the marginal effects from the <code>bayes_dydx_ordinal.factor</code> function to the <code>margins</code> function. Importantly, there is no documentation on how <code>margins</code> works with ordinal regressions. There is great documentation <a href="https://cran.r-project.org/web/packages/margins/vignettes/Introduction.html">here</a> and a great technical <a href="https://cran.r-project.org/web/packages/margins/margins.pdf">paper</a>, but neither covers ordinal regression.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#ewjjugawip .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#ewjjugawip .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#ewjjugawip .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#ewjjugawip .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#ewjjugawip .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#ewjjugawip .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#ewjjugawip .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#ewjjugawip .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#ewjjugawip .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#ewjjugawip .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#ewjjugawip .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#ewjjugawip .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#ewjjugawip .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#ewjjugawip .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#ewjjugawip .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ewjjugawip .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ewjjugawip .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#ewjjugawip .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#ewjjugawip .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#ewjjugawip .gt_left {
+  text-align: left;
+}
+
+#ewjjugawip .gt_center {
+  text-align: center;
+}
+
+#ewjjugawip .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#ewjjugawip .gt_font_normal {
+  font-weight: normal;
+}
+
+#ewjjugawip .gt_font_bold {
+  font-weight: bold;
+}
+
+#ewjjugawip .gt_font_italic {
+  font-style: italic;
+}
+
+#ewjjugawip .gt_super {
+  font-size: 65%;
+}
+
+#ewjjugawip .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="ewjjugawip" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  <thead class="gt_header">
+    <tr>
+      <th colspan="4" class="gt_heading gt_title gt_font_normal" style>Average Marginal Effects Comparison</th>
+    </tr>
+    <tr>
+      <th colspan="4" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_center gt_columns_bottom_border" rowspan="2" colspan="1">Health Status</th>
+      <th class="gt_col_heading gt_center gt_columns_bottom_border" rowspan="2" colspan="1">Response</th>
+      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="2">
+        <span class="gt_column_spanner">Average Marginal Effects</span>
+      </th>
+    </tr>
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">AME</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">AME_Bayes</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">poor</td>
+      <td class="gt_row gt_left">black</td>
+      <td class="gt_row gt_right">0.073849996</td>
+      <td class="gt_row gt_right">0.073245246</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">poor</td>
+      <td class="gt_row gt_left">female</td>
+      <td class="gt_row gt_right">0.007427055</td>
+      <td class="gt_row gt_right">0.007414216</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">fair</td>
+      <td class="gt_row gt_left">black</td>
+      <td class="gt_row gt_right">0.073849996</td>
+      <td class="gt_row gt_right">0.092231627</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">fair</td>
+      <td class="gt_row gt_left">female</td>
+      <td class="gt_row gt_right">0.007427055</td>
+      <td class="gt_row gt_right">0.011762834</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">average</td>
+      <td class="gt_row gt_left">black</td>
+      <td class="gt_row gt_right">0.073849996</td>
+      <td class="gt_row gt_right">0.020874869</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">average</td>
+      <td class="gt_row gt_left">female</td>
+      <td class="gt_row gt_right">0.007427055</td>
+      <td class="gt_row gt_right">0.006492009</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">good</td>
+      <td class="gt_row gt_left">black</td>
+      <td class="gt_row gt_right">0.073849996</td>
+      <td class="gt_row gt_right">-0.067162768</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">good</td>
+      <td class="gt_row gt_left">female</td>
+      <td class="gt_row gt_right">0.007427055</td>
+      <td class="gt_row gt_right">-0.006794665</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">excellent</td>
+      <td class="gt_row gt_left">black</td>
+      <td class="gt_row gt_right">0.073849996</td>
+      <td class="gt_row gt_right">-0.119230332</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">excellent</td>
+      <td class="gt_row gt_left">female</td>
+      <td class="gt_row gt_right">0.007427055</td>
+      <td class="gt_row gt_right">-0.018878068</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>As we can see the marginal effects from the <code>margins</code> package do not match <code>bayes_dydx_ordinal.factor</code>. However, the <code>margins</code> estimates do not vary by outcome level. They are very similar at the first level, or health status equal to poor compared to the estimates from <code>bayes_dydx_ordinal.factor</code>, but vary considerably from the other outcomes.</p>
+<div id="looking-at-stata" class="section level3">
+<h3>Looking at STATA</h3>
+<p>STATA users seem to use average marginal effects more. This forum details the general process of average marginal effects()[<a href="https://www.statalist.org/forums/forum/general-stata-discussion/general/1465336-ordered-probit-marginal-effects" class="uri">https://www.statalist.org/forums/forum/general-stata-discussion/general/1465336-ordered-probit-marginal-effects</a>].</p>
+<p>The basic idea is for each level of your dependent variable there should be a separate average marginal effect. The interpretation is then a one unit change in x is associated with a given probability of being in a category.</p>
+<p>There is a paper that use the same <code>nhanes2</code> dataset and provide average marginal effects by each outcome. The paper is <a href="https://www3.nd.edu/~rwilliam/stats3/Margins05.pdf">here</a>.</p>
+<p>The third page provides the comparison. I put them into a table and compared them with the <code>bayes_dydx_ordinal.factor</code>. The paper only provides the average marginal effects for the independent variable <code>black</code>.</p>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#udgidlvebk .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#udgidlvebk .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#udgidlvebk .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#udgidlvebk .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#udgidlvebk .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#udgidlvebk .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#udgidlvebk .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#udgidlvebk .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#udgidlvebk .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#udgidlvebk .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#udgidlvebk .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#udgidlvebk .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#udgidlvebk .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#udgidlvebk .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#udgidlvebk .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#udgidlvebk .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#udgidlvebk .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#udgidlvebk .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#udgidlvebk .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#udgidlvebk .gt_left {
+  text-align: left;
+}
+
+#udgidlvebk .gt_center {
+  text-align: center;
+}
+
+#udgidlvebk .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#udgidlvebk .gt_font_normal {
+  font-weight: normal;
+}
+
+#udgidlvebk .gt_font_bold {
+  font-weight: bold;
+}
+
+#udgidlvebk .gt_font_italic {
+  font-style: italic;
+}
+
+#udgidlvebk .gt_super {
+  font-size: 65%;
+}
+
+#udgidlvebk .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="udgidlvebk" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  <thead class="gt_header">
+    <tr>
+      <th colspan="3" class="gt_heading gt_title gt_font_normal" style>Average Marginal Effects Comparison - 2</th>
+    </tr>
+    <tr>
+      <th colspan="3" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style></th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Health Status</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">AME</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1">p50</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">poor</td>
+      <td class="gt_row gt_right">0.074</td>
+      <td class="gt_row gt_right">0.073</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">fair</td>
+      <td class="gt_row gt_right">0.093</td>
+      <td class="gt_row gt_right">0.092</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">average</td>
+      <td class="gt_row gt_right">0.021</td>
+      <td class="gt_row gt_right">0.021</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">good</td>
+      <td class="gt_row gt_right">-0.068</td>
+      <td class="gt_row gt_right">-0.067</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">excellent</td>
+      <td class="gt_row gt_right">-0.120</td>
+      <td class="gt_row gt_right">-0.119</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>As we can see, our estimates line up close to the estimates provided by Richard Williams’ paper discussed above.</p>
+</div>
+<div id="changes-to-the-function" class="section level3">
+<h3>Changes to the function:</h3>
+<p>The changes to the function are very few:</p>
+<p>The first change results from <code>add_fitted_draws</code>. When we use this function with an ordinal regression model, it adds a variable to the output. The variable is called <code>.category</code> which represents the levels of the dependent variable.</p>
+<p>The change is simple:</p>
+<ul>
+<li>From: <code>group_by_at(vars( ".category"))</code></li>
+<li>To: <code>group_by_at(vars(".draw", ".category"))</code></li>
+</ul>
+<p>This allows us to get a predicted draws from the data used to model.</p>
+<pre class="r"><code> f[[i]] &lt;- 
+      d %&gt;% 
+      add_fitted_draws(model = model,
+                       re_formula = NULL,
+                       value = &quot;eff&quot;) %&gt;% 
+      ##### Need to include ordered within response variable
+      group_by_at(vars(&quot;.draw&quot;, &quot;.category&quot;)) %&gt;% 
+      #group_by_at(vars(&quot;.draw&quot;)) %&gt;% 
+      summarise(
+        # eff = sum(eff),
+        # w = sum(w),
+        # eff_w_a = sum(eff*w),
+        eff_w = sum(eff * w)/sum(w)) %&gt;% 
+      #dplyr::select(eff_w) %&gt;% 
+      #dplyr::select(eff_w, w, eff, eff_w_a) %&gt;% 
+      ungroup() %&gt;% 
+      select(-.draw)
+    
+    # Compute contrast if not base level
+    if (i &gt; 1){
+      f[[i]]$eff_w &lt;- f[[i]]$eff_w - f[[1]][[2]] #### Change here because also included the order of response
+    }</code></pre>
+<p>The contrast code also needs to change as the <code>data.frame</code> <code>f[[1]]</code> now has two columns. The first column represents the category of outcome variable.</p>
+<p>There are other changes regarding the format of the final output, but they are simple small changes using <code>dplyr</code>.</p>
+</div>
+<div id="interpretation" class="section level3">
+<h3>Interpretation:</h3>
+<p>The interpretation of the average marginal effects for an ordinal model, as discussed earlier is a one-unit change in the independent variable is associated with a x% change of being in a given category.</p>
+</div>
+
+    </div>
+  </article>
+
+  
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          <li>
+            <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+          </li>
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" alt="Img link to Hugo website" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+    
+  </body>
+</html>
+
