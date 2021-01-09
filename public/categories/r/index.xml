@@ -12,11 +12,11 @@
     
     
     <item>
-      <title>Implemting Average Marginal Effects with Bayesian Ordinal Regression</title>
-      <link>/2021/01/08/implemting-average-marginal-effects-with-bayesian-ordinal-regression/</link>
+      <title>Implenting Average Marginal Effects with Bayesian Ordinal Regression</title>
+      <link>/2021/01/08/implenting-average-marginal-effects-with-bayesian-ordinal-regression/</link>
       <pubDate>Fri, 08 Jan 2021 00:00:00 +0000</pubDate>
       
-      <guid>/2021/01/08/implemting-average-marginal-effects-with-bayesian-ordinal-regression/</guid>
+      <guid>/2021/01/08/implenting-average-marginal-effects-with-bayesian-ordinal-regression/</guid>
       <description>The R package margins provides average marginal effects for any model developed with lm or glm, among many others. However, margins does not work with brms. Jack O’Bailey developed two functions for brms here. There are two functions in this text file. The first function gets the average marginal effects for continuous independent variables. The second function get the average marginal effects for categorical variables. The link compares the results of the two functions with the margins command from the package margins.</description>
     </item>
     

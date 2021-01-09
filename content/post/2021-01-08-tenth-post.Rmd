@@ -1,5 +1,5 @@
 ---
-title: Implemting Average Marginal Effects with Bayesian Ordinal Regression
+title: Implenting Average Marginal Effects with Bayesian Ordinal Regression
 author: ''
 date: '2021-01-08'
 slug: tenth-post

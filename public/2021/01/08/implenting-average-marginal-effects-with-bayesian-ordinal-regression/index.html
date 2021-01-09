@@ -1,13 +1,78 @@
----
-title: Implenting Average Marginal Effects with Bayesian Ordinal Regression
-author: ''
-date: '2021-01-08'
-slug: tenth-post
-categories:
-  - R
-tags: []
----
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.72.0" />
 
+
+<title>Implenting Average Marginal Effects with Bayesian Ordinal Regression - Kieran Shah&#39;s Data Science Examples</title>
+<meta property="og:title" content="Implenting Average Marginal Effects with Bayesian Ordinal Regression - Kieran Shah&#39;s Data Science Examples">
+
+
+  <link href='/favicon.ico' rel='icon' type='image/x-icon'/>
+
+
+
+  
+
+
+
+
+
+
+
+
+<link href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css' rel='stylesheet' type='text/css' />
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/about/">About</a></li>
+    
+    <li><a href="https://github.com/kieran11">GitHub</a></li>
+    
+    <li><a href="https://www.linkedin.com/in/kieran-shah11">LinkedIn</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">14 min read</span>
+    
+
+    <h1 class="article-title">Implenting Average Marginal Effects with Bayesian Ordinal Regression</h1>
+
+    
+    <span class="article-date">2021-01-08</span>
+    
+
+    <div class="article-content">
+      
 
 
 <p>The <code>R</code> package <code>margins</code> provides average marginal effects for any model developed with <code>lm</code> or <code>glm</code>, among many others. However, <code>margins</code> does not work with <code>brms</code>. Jack O’Bailey developed two functions for <code>brms</code> <a href="https://gist.github.com/jackobailey/0982c89326c36b12d6fa6d6f182189be">here</a>. There are two functions in this text file. The first function gets the average marginal effects for continuous independent variables. The second function get the average marginal effects for categorical variables. The link compares the results of the two functions with the <code>margins</code> command from the package <code>margins</code>. If you run the example, you can see that the results are remarkably similar.</p>
@@ -1385,3 +1450,47 @@ BayesAME = purrr::map(as.list(c(&quot;black&quot;, &quot;female&quot;)), AMEByVa
 <h3>Interpretation:</h3>
 <p>The interpretation of the average marginal effects for an ordinal model, as discussed earlier is a one-unit change in the independent variable is associated with a x% change of being in a given category.</p>
 </div>
+
+    </div>
+  </article>
+
+  
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          <li>
+            <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+          </li>
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" alt="Img link to Hugo website" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+    
+  </body>
+</html>
+
