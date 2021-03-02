@@ -6,10 +6,21 @@
     <description>Recent content on Kieran Shah&#39;s Data Science Examples</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 08 Jan 2021 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 01 Mar 2021 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Going from the tidyverse to data.table</title>
+      <link>/2021/03/01/going-from-the-tidyverse-to-data.table/</link>
+      <pubDate>Mon, 01 Mar 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/2021/03/01/going-from-the-tidyverse-to-data.table/</guid>
+      <description>data.table is an R package that allows for quicker data manipulations and processing than tidyverse methods.
+This script will first use rvest to grad some data tables from Wikipedia, and then show how to manipulate the data. First, the data will be manipulating with the tidyverse methods, and we’ll create the same dataset with data.table.
+Data - Champions League DataEvery February, the knock out stages of the Champions League begins.</description>
+    </item>
     
     <item>
       <title>Implenting Average Marginal Effects with Bayesian Ordinal Regression</title>
@@ -17,7 +28,7 @@
       <pubDate>Fri, 08 Jan 2021 00:00:00 +0000</pubDate>
       
       <guid>/2021/01/08/implenting-average-marginal-effects-with-bayesian-ordinal-regression/</guid>
-      <description>The R package margins provides average marginal effects for any model developed with lm or glm, among many others. However, margins does not work with brms. Jack O’Bailey developed two functions for brms here. There are two functions in this text file. The first function gets the average marginal effects for continuous independent variables. The second function get the average marginal effects for categorical variables. The link compares the results of the two functions with the margins command from the package margins.</description>
+      <description>The R package margins provides average marginal effects for any model developed with lm or glm, among others. However, margins does not work with brms. Jack O’Bailey developed two functions for brms here. There are two functions in this text file. The first function gets the average marginal effects for continuous independent variables. The second function get the average marginal effects for categorical variables. The link compares the results of the two functions with the margins command from the package margins.</description>
     </item>
     
     <item>

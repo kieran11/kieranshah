@@ -1,0 +1,1703 @@
+---
+title: Going from the tidyverse to data.table
+author: ''
+date: '2021-03-01'
+slug: eleventh-post
+categories:
+  - R
+tags: []
+---
+
+
+
+<p><code>data.table</code> is an <code>R</code> package that allows for quicker data manipulations and processing than <code>tidyverse</code> methods.</p>
+<p>This script will first use <code>rvest</code> to grad some data tables from Wikipedia, and then show how to manipulate the data. First, the data will be manipulating with the <code>tidyverse</code> methods, and we’ll create the same dataset with <code>data.table</code>.</p>
+<div id="data---champions-league-data" class="section level2">
+<h2>Data - Champions League Data</h2>
+<p>Every February, the knock out stages of the Champions League begins. It is usually filled with some of the best clubs in Europe playing a two games to determine the eventual champion of Europe. Recently, it feels as though these ties have been one-sided.</p>
+<p>This post will explore this idea, and show how to process the data in both the <code>dplyr</code> and <code>data.table</code>.</p>
+<p>The first step is to grab the data from Wikipedia. There are tables which show each round, from qualifying to Champions League to the knockout stages.</p>
+<pre class="scrape"><code>
+ReadInChampsLg = function(x, y){
+  
+  url = paste0(&quot;https://en.wikipedia.org/wiki/&quot;, 
+               x, 
+               &quot;%E2%80%93&quot;, 
+               y, 
+               &quot;_UEFA_Champions_League&quot;)
+# 
+  ChampionsLeague = url %&gt;%
+    read_html() %&gt;%
+    html_table(fill = TRUE)
+#
+  ChampionsLeague_2 = ChampionsLeague[grepl(&quot;1st leg&quot;, ChampionsLeague) == TRUE ]
+#
+  ChampionsLeagueAllRounds = purrr::map2(ChampionsLeague_2, as.list(seq(1, length(ChampionsLeague_2)) ) , ~ .x %&gt;%
+                                           mutate(Round = .y)) %&gt;%
+    bind_rows(.) %&gt;%
+    mutate(Year = paste0(x, &quot;-&quot;, y))
+#
+  closeAllConnections()
+
+  return(ChampionsLeagueAllRounds)
+  }
+
+
+AllChampionsLeagueData = purrr::map2(
+  as.list(seq(2003, 2018)[(-11)]),
+  as.list(stringr::str_sub( as.character( seq(2004, 2019)) , -2)[(-11)]), 
+            ReadInChampsLg)
+            
+AllChampionsLeagueDF = AllChampionsLeagueData %&gt;% 
+  bind_rows(.)
+
+#AllChampionsLeagueDF = dget(  &quot;C:/Users/Kieran Shah/Dropbox/Public/ChampionsLeague/ChampionsLeagueResults&quot; )
+# readr::write_csv(AllChampionsLeagueDF ,
+#                  &quot;C:/Users/Kieran Shah/Dropbox/Public/ChampionsLeague/ChampionsLeagueResults.csv&quot;)
+
+#dput(AllChampionsLeagueDF , &quot;ChampionsLeagueResults&quot; )
+</code></pre>
+<p>The code above uses <code>rvest</code> to grab the data from Wikipedia. It pulls in every table with <code>html_table</code>. After running the code above, we get the below data set:</p>
+<pre><code>## $`_data`
+## # A tibble: 865 x 7
+##    `Team 1`         Agg.        `Team 2`        `1st leg` `2nd leg` Round Year  
+##    &lt;chr&gt;            &lt;chr&gt;       &lt;chr&gt;           &lt;chr&gt;     &lt;chr&gt;     &lt;int&gt; &lt;chr&gt; 
+##  1 Pyunik           2–1         KR              1–0       1–1           1 2003-~
+##  2 Sheriff Tiraspol 2–1         Flora Tallinn   1–0       1–1           1 2003-~
+##  3 HB               1–5         FBK Kaunas      0–1       1–4           1 2003-~
+##  4 BATE Borisov     1–3         Bohemians       1–0       0–3           1 2003-~
+##  5 Vardar           4–2         Barry Town      3–0       1–2           1 2003-~
+##  6 Grevenmacher     0–2         Leotar          0–0       0–2           1 2003-~
+##  7 Glentoran        0–1         HJK             0–0       0–1           1 2003-~
+##  8 Sliema Wanderers 3–3 (a)     Skonto          2–0       1–3           1 2003-~
+##  9 Omonia           2–1         Irtysh Pavlodar 0–0       2–1           1 2003-~
+## 10 Dinamo Tbilisi   3–3 (2–4 p) KF Tirana       3–0       0–3 (aet)     1 2003-~
+## # ... with 855 more rows
+## 
+## $`_boxhead`
+## # A tibble: 7 x 6
+##   var     type    column_label column_align column_width hidden_px
+##   &lt;chr&gt;   &lt;chr&gt;   &lt;list&gt;       &lt;chr&gt;        &lt;list&gt;       &lt;list&gt;   
+## 1 Team 1  default &lt;chr [1]&gt;    left         &lt;NULL&gt;       &lt;NULL&gt;   
+## 2 Agg.    default &lt;chr [1]&gt;    left         &lt;NULL&gt;       &lt;NULL&gt;   
+## 3 Team 2  default &lt;chr [1]&gt;    left         &lt;NULL&gt;       &lt;NULL&gt;   
+## 4 1st leg default &lt;chr [1]&gt;    left         &lt;NULL&gt;       &lt;NULL&gt;   
+## 5 2nd leg default &lt;chr [1]&gt;    left         &lt;NULL&gt;       &lt;NULL&gt;   
+## 6 Round   default &lt;chr [1]&gt;    center       &lt;NULL&gt;       &lt;NULL&gt;   
+## 7 Year    default &lt;chr [1]&gt;    left         &lt;NULL&gt;       &lt;NULL&gt;   
+## 
+## $`_stub_df`
+## # A tibble: 865 x 3
+##    rownum_i groupname rowname
+##       &lt;int&gt; &lt;chr&gt;     &lt;chr&gt;  
+##  1        1 &lt;NA&gt;      &lt;NA&gt;   
+##  2        2 &lt;NA&gt;      &lt;NA&gt;   
+##  3        3 &lt;NA&gt;      &lt;NA&gt;   
+##  4        4 &lt;NA&gt;      &lt;NA&gt;   
+##  5        5 &lt;NA&gt;      &lt;NA&gt;   
+##  6        6 &lt;NA&gt;      &lt;NA&gt;   
+##  7        7 &lt;NA&gt;      &lt;NA&gt;   
+##  8        8 &lt;NA&gt;      &lt;NA&gt;   
+##  9        9 &lt;NA&gt;      &lt;NA&gt;   
+## 10       10 &lt;NA&gt;      &lt;NA&gt;   
+## # ... with 855 more rows
+## 
+## $`_row_groups`
+## character(0)
+## 
+## $`_stub_others`
+## [1] NA
+## 
+## $`_heading`
+## $`_heading`$title
+## NULL
+## 
+## $`_heading`$subtitle
+## NULL</code></pre>
+<p>The two variables created are round and Year. Round is the iteration of the loop and year uses the url to determine which year we are scraping. However, one of the main problems is that rounds have been added frequently over the decade and half. In 2004, there were only three rounds of qualifying. By 2018-19, there were six rounds of qualifying.</p>
+<pre class="r"><code>KnockOutStage = AllChampionsLeagueDF %&gt;% 
+  as_tibble() 
+
+FindLastThreeRounds = KnockOutStage %&gt;% 
+  count(Year, Round) %&gt;% 
+  tidyr::spread(Round , n) 
+
+gt::gt(FindLastThreeRounds)</code></pre>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#jbnsxtaotr .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#jbnsxtaotr .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#jbnsxtaotr .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#jbnsxtaotr .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#jbnsxtaotr .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#jbnsxtaotr .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#jbnsxtaotr .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#jbnsxtaotr .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#jbnsxtaotr .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#jbnsxtaotr .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#jbnsxtaotr .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#jbnsxtaotr .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#jbnsxtaotr .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#jbnsxtaotr .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#jbnsxtaotr .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#jbnsxtaotr .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#jbnsxtaotr .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#jbnsxtaotr .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#jbnsxtaotr .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#jbnsxtaotr .gt_left {
+  text-align: left;
+}
+
+#jbnsxtaotr .gt_center {
+  text-align: center;
+}
+
+#jbnsxtaotr .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#jbnsxtaotr .gt_font_normal {
+  font-weight: normal;
+}
+
+#jbnsxtaotr .gt_font_bold {
+  font-weight: bold;
+}
+
+#jbnsxtaotr .gt_font_italic {
+  font-style: italic;
+}
+
+#jbnsxtaotr .gt_super {
+  font-size: 65%;
+}
+
+#jbnsxtaotr .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="jbnsxtaotr" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Year</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">1</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">2</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">3</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">4</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">5</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">6</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">7</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">8</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">9</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">10</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">2003-04</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2004-05</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2005-06</td>
+      <td class="gt_row gt_center">12</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2006-07</td>
+      <td class="gt_row gt_center">11</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2007-08</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2008-09</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2009-10</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2010-11</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2011-12</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2012-13</td>
+      <td class="gt_row gt_center">3</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2014-15</td>
+      <td class="gt_row gt_center">3</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2015-16</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2016-17</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2017-18</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2018-19</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">6</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>The above table shows this. We aggregate the data by year and round, and then make the dataset wide. This shows us the missing rounds by year.</p>
+<p>To capture the final three rounds, we remove missing rows for each of the years, and only keep the last three rows for each year. The last three rows coincide with the last three stages of the Champions League.</p>
+<pre class="r"><code>FindLastThreeRounds_2 = FindLastThreeRounds %&gt;% 
+  tidyr::gather(Round , Rows, -Year) %&gt;% 
+  filter(!is.na(Rows)) %&gt;% 
+  group_by(Year) %&gt;%
+  mutate(rown_n = n()) %&gt;% 
+  mutate(row_n = n() - as.numeric(Round)) %&gt;%
+  filter(row_n  &lt;=2) %&gt;%
+  ungroup() %&gt;% 
+  group_by(Year) %&gt;% 
+  mutate(Stage = case_when(row_number() == 1 ~ &quot;Round of 16&quot;,
+                           row_number() == 2 ~ &quot;Quarter Finals&quot;,
+                           TRUE ~ &quot;Semi-Finals&quot;))</code></pre>
+<p>After creating a dataset with the stages and years, we re-merge the data with the original knockout stage data.</p>
+<pre class="r"><code>KnockOutStage_2 = KnockOutStage %&gt;% 
+  inner_join(FindLastThreeRounds_2 %&gt;% 
+               mutate(Round = as.numeric(Round)), by = c(&quot;Round&quot;, &quot;Year&quot;)) %&gt;% 
+  janitor::clean_names() %&gt;% 
+  tidyr::separate(x1st_leg , into = c(&quot;HomeScore&quot;, &quot;AwayScore&quot;)) %&gt;% 
+  mutate_at(vars(HomeScore, AwayScore), as.numeric) %&gt;% 
+  mutate(AbsDifference = abs(HomeScore - AwayScore)) </code></pre>
+<p>We then group the data by year to get the average goal difference for the 1st stage from 2004 to 2019.</p>
+<pre class="r"><code>KnockOutStage_Dplyr = KnockOutStage_2 %&gt;% 
+  group_by(year) %&gt;% 
+  summarise(AbsoluteDifference = mean(AbsDifference)) %&gt;% 
+  ungroup() %&gt;% 
+  mutate(Year = stringi::stri_replace_all_fixed(year, &quot;-&quot;, &quot;-\n&quot;)) </code></pre>
+</div>
+<div id="data.table" class="section level2">
+<h2><code>data.table</code></h2>
+<p>Next, we try to recreate the above data steps with <code>data.table</code>. Up to this point, I never used <code>data.table</code>.</p>
+<pre class="r"><code>KnockOutStageDT = data.table(KnockOutStage)
+
+FindLastThreeRoundDT =  KnockOutStageDT[,  .N, by = c(&quot;Year&quot;, &quot;Round&quot;)] %&gt;% 
+  dcast(., Year ~ Round  , value.var = c(&quot;N&quot;)) 
+
+FindLastThreeRoundDT_a = FindLastThreeRoundDT %&gt;%
+  melt(.,  measure = patterns(&quot;[[:digit:]]&quot;), value.name =  c(&quot;Rows&quot;)) %&gt;%
+  na.omit(., cols = c(&quot;Rows&quot;))
+
+gt::gt(FindLastThreeRoundDT)</code></pre>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#mqerieruhn .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#mqerieruhn .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#mqerieruhn .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#mqerieruhn .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#mqerieruhn .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#mqerieruhn .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#mqerieruhn .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#mqerieruhn .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#mqerieruhn .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#mqerieruhn .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#mqerieruhn .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#mqerieruhn .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#mqerieruhn .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#mqerieruhn .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#mqerieruhn .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mqerieruhn .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mqerieruhn .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#mqerieruhn .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mqerieruhn .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#mqerieruhn .gt_left {
+  text-align: left;
+}
+
+#mqerieruhn .gt_center {
+  text-align: center;
+}
+
+#mqerieruhn .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#mqerieruhn .gt_font_normal {
+  font-weight: normal;
+}
+
+#mqerieruhn .gt_font_bold {
+  font-weight: bold;
+}
+
+#mqerieruhn .gt_font_italic {
+  font-style: italic;
+}
+
+#mqerieruhn .gt_super {
+  font-size: 65%;
+}
+
+#mqerieruhn .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="mqerieruhn" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Year</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">1</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">2</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">3</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">4</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">5</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">6</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">7</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">8</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">9</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">10</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">2003-04</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2004-05</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2005-06</td>
+      <td class="gt_row gt_center">12</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2006-07</td>
+      <td class="gt_row gt_center">11</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2007-08</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2008-09</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">14</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2009-10</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2010-11</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2011-12</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2012-13</td>
+      <td class="gt_row gt_center">3</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2014-15</td>
+      <td class="gt_row gt_center">3</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2015-16</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2016-17</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2017-18</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">17</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">5</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">NA</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2018-19</td>
+      <td class="gt_row gt_center">16</td>
+      <td class="gt_row gt_center">10</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">6</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+      <td class="gt_row gt_center">8</td>
+      <td class="gt_row gt_center">4</td>
+      <td class="gt_row gt_center">2</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>The first step is to recreate the table above which shows the variation in rounds by year. We use the function <code>dcast</code> to make the aggregated data go from long to wide, and then <code>melt</code> to make the data go from wide to long.</p>
+<pre class="r"><code>FindLastThreeRoundDT_a[, nth := row.names(.SD), by = &quot;Year&quot;]
+LastRowYearDT =FindLastThreeRoundDT_a[, last(nth), by = Year]
+
+
+gt::gt(tail(LastRowYearDT))</code></pre>
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#llsomusdeg .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#llsomusdeg .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 4px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#llsomusdeg .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#llsomusdeg .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#llsomusdeg .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#llsomusdeg .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#llsomusdeg .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#llsomusdeg .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#llsomusdeg .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#llsomusdeg .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#llsomusdeg .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#llsomusdeg .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#llsomusdeg .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#llsomusdeg .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#llsomusdeg .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#llsomusdeg .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#llsomusdeg .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#llsomusdeg .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#llsomusdeg .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#llsomusdeg .gt_left {
+  text-align: left;
+}
+
+#llsomusdeg .gt_center {
+  text-align: center;
+}
+
+#llsomusdeg .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#llsomusdeg .gt_font_normal {
+  font-weight: normal;
+}
+
+#llsomusdeg .gt_font_bold {
+  font-weight: bold;
+}
+
+#llsomusdeg .gt_font_italic {
+  font-style: italic;
+}
+
+#llsomusdeg .gt_super {
+  font-size: 65%;
+}
+
+#llsomusdeg .gt_footnote_marks {
+  font-style: italic;
+  font-size: 65%;
+}
+</style>
+<div id="llsomusdeg" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;"><table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">Year</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1">V1</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr>
+      <td class="gt_row gt_left">2012-13</td>
+      <td class="gt_row gt_left">9</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2014-15</td>
+      <td class="gt_row gt_left">9</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2015-16</td>
+      <td class="gt_row gt_left">9</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2016-17</td>
+      <td class="gt_row gt_left">9</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2017-18</td>
+      <td class="gt_row gt_left">9</td>
+    </tr>
+    <tr>
+      <td class="gt_row gt_left">2018-19</td>
+      <td class="gt_row gt_left">10</td>
+    </tr>
+  </tbody>
+  
+  
+</table></div>
+<p>The first step is find the number of rounds per year. As we previously mentioned, in 2003-2004 there were three qualifying rounds, compared to seven in 2018-2019.</p>
+<p>To do this, we enumerate the row numbers by each year. Row numbers for 2003-2004 would range from one to six. We then take the last number, or the highest number.</p>
+<p>To keep the relevant qualifying rounds, we re-merge the data with our original dataset used to identify the relevant rounds.</p>
+<p><code>data.table</code> is much faster. While it does not matter when your dataset is small, as is the case in this example, it matters more when your dataset has millions of rows and dozens of fields. When re-merge the data, we first identify the merging key with <code>setkey</code>. If you wanted to use multiple keys, then <code>setkeyv</code> would be the correct syntax.</p>
+<pre class="r"><code>setkey(FindLastThreeRoundDT_a,Year)
+setkey(LastRowYearDT, Year)
+
+FindLastThreeRoundDT_2 = FindLastThreeRoundDT_a[ LastRowYearDT, nomatch = 0]</code></pre>
+<p>The above example demonstrates an inner-join, where we only keep the rows that match from each of the two datasets. Good examples of how to use merging with <code>data.table</code> can be found <a href="https://atrebas.github.io/post/2019-03-03-datatable-dplyr/#joinbind-data-sets">here</a>. We did not use this step for the <code>dplyr</code> example. We were able to combine the step within the pipelines.</p>
+<p>The next step is to define the stages of Round of 16, quarter-finals, and semi-finals. We define these stages as the last three rows for each group.</p>
+<pre class="r"><code>FindLastThreeRoundDT_3 = FindLastThreeRoundDT_2[, row_n :=   as.numeric(V1) - as.numeric(variable) ][
+  row_n &lt;= 2][
+    , row_names_2 := row.names(.SD), by = &quot;Year&quot;
+  ][
+    , Stage := fifelse(row_names_2  == 1, &quot;Round of 16&quot;, 
+                       fifelse(row_names_2 == 2 , &quot;Quarter Finals&quot;, &quot;Semi-Finals&quot;))
+  ][
+    , Round := as.numeric(variable)
+  ]</code></pre>
+<p>Finally, we recreate the <code>dplyr</code> data step from above. We merge the data, and find the absolute difference in goals during the first leg of Champions League ties.</p>
+<p>We use the <code>setkeyv</code> to index the two datasets, and merge them in the following step. Similar to the <code>%&gt;%</code> operator from <code>dplyr</code>, <code>data.table</code> can pipe data steps together with <code>[]</code>, as seen below.</p>
+<pre class="r"><code>setkeyv(FindLastThreeRoundDT_3,c(&quot;Year&quot;, &quot;Round&quot;))
+setkeyv(KnockOutStageDT, c(&quot;Year&quot;, &quot;Round&quot;))
+
+KnockOutStageDT_2 = KnockOutStageDT[ FindLastThreeRoundDT_3, nomatch = 0]
+setnames(KnockOutStageDT_2, &quot;1st leg&quot;, &quot;Leg1&quot;)
+
+KnockOutStageDT_2[, HomeScore := stringr::str_sub(Leg1, 1, 1)][
+  , AwayScore := stringr::str_sub(Leg1, 3, 3)
+]</code></pre>
+<p>When we would like to make a change to two or more variables with <code>dplyr</code> we can use <code>mutate_at</code> if we know the specific variables, or <code>mutate_if</code> if the variables all share a common data type. With <code>data.table</code> we use <code>set</code> to do the same manipulation.</p>
+<pre class="r"><code>names_factors &lt;- c(&quot;HomeScore&quot;, &quot;AwayScore&quot;)
+for(col in names_factors)
+  set(KnockOutStageDT_2, j = col, value = as.numeric(KnockOutStageDT_2[[col]]))
+
+KnockOutStageDT_2[, AbsoluteDifferece := abs(HomeScore - AwayScore)]</code></pre>
+<p>The final step is to calculate the absolute difference in goals, and then group by year.</p>
+<pre class="r"><code>KnockOutStageDT_3 = KnockOutStageDT_2[, .(AbsoluteDifference = mean(AbsoluteDifferece)), by = Year][
+  , Year := stringr::str_replace_all(Year, &quot;-&quot;, &quot;\n&quot;)
+][
+  , Method := &quot;DT&quot;
+]
+
+KnockOutStageDT_Stg3 = KnockOutStageDT_2[, .(AbsoluteDifference = mean(AbsoluteDifferece)), 
+                                         by = c(&quot;Year&quot;, &quot;Stage&quot; )][
+  , Year := stringr::str_sub(Year, -2)
+]</code></pre>
+</div>
+<div id="plots-and-conclusions" class="section level2">
+<h2>Plots and conclusions:</h2>
+<p>After putting the data together, we get the average goal difference between home team and away team. We are interested in competitiveness. The absolute difference gives us a better idea of how competitive a second leg game could be. The more narrow the gap, the more competitive games should be. Note, this obviously does not take into account <a href="https://en.wikipedia.org/wiki/Away_goals_rule#:~:text=By%20the%20away%20goals%20rule,each%20team%20are%20otherwise%20equal.&amp;text=The%20away%20goals%20rule%20is%20most%20often%20invoked%20in%20two,both%20games%20are%20added%20together.">away goals</a>.</p>
+<p>First, we can see that the <code>data.table</code> code matches the <code>dplyr</code> code. The datasets are both the same, and the below plot reflects that.</p>
+<p><img src="/post/2021-03-01-eleventh-post_files/figure-html/OverallPlt-1.png" width="672" /></p>
+<p>As we can see, the gap has been increasing, and is dramatically higher more recently. However, we do not know when the discrepancies are occurring. Are they occurring during the Round of 16, where there may be great discrepancies between the teams.</p>
+<p><img src="/post/2021-03-01-eleventh-post_files/figure-html/ByStagePlt-1.png" width="672" /></p>
+<p>The gaps for all rounds increases overtime. There is a considerable amount of variation, but Round 16 is pretty consistent, although the gap is growing.</p>
+</div>
